@@ -73,6 +73,9 @@ body {
   box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
   width: min(400px, 90%);
   margin: 0 auto;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 @media (max-width: 480px) {
@@ -88,7 +91,7 @@ h2 {
 }
 
 .form-group {
-  margin-bottom: 1rem;
+  width: 100%;
 }
 
 label {
@@ -103,6 +106,7 @@ input {
   border: 1px solid #ddd;
   border-radius: 4px;
   font-size: 1rem;
+  box-sizing: border-box;
 }
 
 input:focus {
@@ -120,6 +124,7 @@ input:focus {
   font-size: 1rem;
   cursor: pointer;
   transition: background-color 0.3s;
+  box-sizing: border-box;
 }
 
 .login-button:hover {
