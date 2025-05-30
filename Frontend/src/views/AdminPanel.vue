@@ -125,6 +125,7 @@ nav li.active {
     flex-direction: column;
     padding: 1rem;
     min-height: 100vh;
+    max-width: calc(100vw - 3rem);
     height: auto;
   }
 
