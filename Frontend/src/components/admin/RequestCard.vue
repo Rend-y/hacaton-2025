@@ -135,6 +135,11 @@ const toggle = () => {
 
 .arrow {
   font-size: 1.2rem;
+  transition: transform 0.3s ease;
+}
+
+.arrow-up {
+  transform: rotate(180deg);
 }
 
 .card-body {

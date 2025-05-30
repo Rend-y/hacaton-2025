@@ -2,33 +2,26 @@
   <div class="login-container">
     <form @submit.prevent="handleLogin" class="login-form">
       <h1 class="login-title">
-        <span class="bold">А</span>вт<span class="gradient">оризация</span>
+        <span class="gradient">Авторизация</span>
       </h1>
       <hr class="login-divider" />
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          v-model="email"
-          required
-          placeholder="Email"
-          class="custom-input"
-        />
-      </div>
-      <div class="form-group">
-        <label for="password">Пароль</label>
-        <input
-          type="password"
-          id="password"
-          v-model="password"
-          required
-          placeholder="Password"
-          class="custom-input"
-        />
-      </div>
+      <CustomInput
+        v-model="email"
+        label="Email"
+        type="email"
+        id="email"
+        required
+        placeholder="Email"
+      />
+      <CustomInput
+        v-model="password"
+        label="Пароль"
+        type="password"
+        id="password"
+        required
+        placeholder="Password"
+      />
       <div class="form-footer">
-        <a href="#" class="forgot-link">Не помню пароль</a>
         <button type="submit" class="login-button">Войти</button>
       </div>
     </form>
@@ -38,6 +31,7 @@
 <script setup>
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
+import CustomInput from '@/components/CustomInput.vue'
 
 const userStore = useUserStore()
 const password = ref('')
@@ -95,11 +89,6 @@ const handleLogin = () => userStore.login(email.value, password.value)
   margin: 0 0 1.2rem 0;
 }
 
-.login-title .bold {
-  color: #444;
-  font-weight: 900;
-  font-size: 1.1em;
-}
 .login-title .gradient {
   background: linear-gradient(90deg, #7b5cff 30%, #b86adf 70%);
   -webkit-background-clip: text;
@@ -109,78 +98,41 @@ const handleLogin = () => userStore.login(email.value, password.value)
   font-weight: 900;
 }
 
-.form-group {
-  width: 100%;
-  margin-bottom: 0.5rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #222;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.custom-input {
-  width: 100%;
-  padding: 0.8rem 1rem 0.8rem 1rem;
-  border: none;
-  border-bottom: 2px solid #8884;
-  border-radius: 7px 7px 0 0;
-  background: #e7e1ec;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #2a262b;
-  margin-bottom: 0.5rem;
-  box-sizing: border-box;
-  transition: border-color 0.2s;
-}
-.custom-input:focus {
-  outline: none;
-  border-bottom: 2.5px solid #7b5cff;
-}
-::placeholder {
-  color: #2a262b;
-  opacity: 1;
-  font-weight: 700;
-  font-size: 1.2em;
-}
-
 .form-footer {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   align-items: center;
   margin-top: 1rem;
-}
-
-.forgot-link {
-  color: #0000ff;
-  text-decoration: underline;
-  font-size: 1rem;
-  font-weight: 700;
-  margin-left: 0.2rem;
-  transition: color 0.2s;
-}
-.forgot-link:hover {
-  color: #7b5cff;
+  width: 100%;
 }
 
 .login-button {
-  padding: 0.7rem 1.5rem;
-  background-color: #e7e1ec;
-  color: #2a262b;
-  border: 2px solid #8884;
-  border-radius: 4px;
+  width: 100%;
+  max-width: 100%;
+  padding: 0.8rem 1rem;
+  background: linear-gradient(90deg, #7b5cff 30%, #b86adf 70%);
+  color: white;
+  border: none;
+  border-radius: 8px;
   font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
-  transition: background 0.2s, color 0.2s;
-  margin-left: 1rem;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(123, 92, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  box-sizing: border-box;
 }
+
 .login-button:hover {
-  background: #d1c6e6;
-  color: #7b5cff;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(123, 92, 255, 0.3);
+  background: linear-gradient(90deg, #8b6cff 30%, #c87aef 70%);
+}
+
+.login-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(123, 92, 255, 0.2);
 }
 
 @media (max-width: 600px) {
@@ -203,25 +155,10 @@ label {
   .login-divider {
     margin-bottom: 0.7rem;
   }
-  label {
-    font-size: 0.95rem;
-  }
-  .custom-input {
-    padding: 0.6rem 0.7rem 0.6rem 0.7rem;
-    font-size: 0.95rem;
-    border-radius: 5px 5px 0 0;
-  }
-  .form-footer {
-    margin-top: 0.7rem;
-  }
-  .forgot-link {
-    font-size: 0.9rem;
-  }
   .login-button {
-    padding: 0.5rem 1rem;
-    font-size: 0.95rem;
-    border-radius: 3px;
-    margin-left: 0.5rem;
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    border-radius: 6px;
   }
 }
 </style>
