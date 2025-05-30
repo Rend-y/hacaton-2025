@@ -54,7 +54,6 @@ const toggle = () => {
 </script>
 
 <style scoped>
-/* Основные стили карточки */
 .card {
   background: #f7effa;
   border-radius: 10px;
@@ -70,12 +69,11 @@ const toggle = () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
-/* Заголовок карточки */
 .card-header {
-  display: flex;
+  display: grid;
+  grid-template-columns: auto 1fr auto auto;
+  gap: 1rem;
   align-items: center;
-  flex-wrap: wrap;
-  gap: 0.5rem;
 }
 
 .avatar {
@@ -86,20 +84,33 @@ const toggle = () => {
   text-align: center;
   line-height: 36px;
   font-weight: bold;
-  margin-right: 1rem;
 }
 
 .info {
-  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  overflow: hidden;
 }
 
-/* Статусы */
+.info strong {
+  font-size: 1rem;
+}
+
+.desc {
+  font-size: 0.9rem;
+  color: #666;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .status {
   padding: 4px 8px;
   border-radius: 4px;
   font-size: 0.9rem;
-  margin-right: 1rem;
   text-transform: capitalize;
+  white-space: nowrap;
 }
 
 .status.new {
@@ -122,19 +133,35 @@ const toggle = () => {
   color: #388e3c;
 }
 
-/* Стрелка */
 .arrow {
   font-size: 1.2rem;
-  margin-left: auto;
 }
 
-/* Тело карточки */
 .card-body {
   margin-top: 1rem;
   will-change: transform, opacity, max-height;
 }
 
-/* Анимация раскрытия */
+.card-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-desc {
+  font-size: 0.95rem;
+  line-height: 1.4;
+  color: #444;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  display: -webkit-box;
+  -webkit-line-clamp: 3;
+  -webkit-box-orient: vertical;
+}
+
 .expand-enter-active,
 .expand-leave-active {
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
