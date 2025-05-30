@@ -9,9 +9,6 @@ export const useUserStore = defineStore('user', {
     setUsername(username: string) {
       this.username = username
     },
-    setPassword(password: string) {
-      this.password = password
-    },
     setEmail(email: string) {
       this.email = email
     },
@@ -30,7 +27,6 @@ export const useUserStore = defineStore('user', {
   },
   getters: {
     getUsername: (state) => state.username,
-    getPassword: (state) => state.password,
     getEmail: (state) => state.email,
   }
 })
