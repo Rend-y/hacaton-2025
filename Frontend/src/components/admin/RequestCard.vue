@@ -9,13 +9,15 @@
         </div>
       </div>
       <div class="status" :class="status">{{ statusLabels[status] }}</div>
-      <div class="arrow">{{ expanded ? '▲' : '▼' }}</div>
+      <div class="arrow" :class="{ 'arrow-up': expanded }">{{ expanded ? '▲' : '▼' }}</div>
     </div>
 
-    <div v-if="expanded" class="card-body">
-      <h4>{{ title }}</h4>
-      <p>{{ description }}</p>
-    </div>
+    <transition name="expand">
+      <div v-if="expanded" class="card-body">
+        <h4 class="card-title">{{ title }}</h4>
+        <p class="card-desc">{{ description }}</p>
+      </div>
+    </transition>
   </div>
 </template>
 
@@ -52,6 +54,7 @@ const toggle = () => {
 </script>
 
 <style scoped>
+/* Основные стили карточки */
 .card {
   background: #f7effa;
   border-radius: 10px;
@@ -67,6 +70,7 @@ const toggle = () => {
   box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
 }
 
+/* Заголовок карточки */
 .card-header {
   display: flex;
   align-items: center;
@@ -89,6 +93,7 @@ const toggle = () => {
   flex: 1;
 }
 
+/* Статусы */
 .status {
   padding: 4px 8px;
   border-radius: 4px;
@@ -117,12 +122,33 @@ const toggle = () => {
   color: #388e3c;
 }
 
+/* Стрелка */
 .arrow {
   font-size: 1.2rem;
   margin-left: auto;
 }
 
+/* Тело карточки */
 .card-body {
   margin-top: 1rem;
+  will-change: transform, opacity, max-height;
+}
+
+/* Анимация раскрытия */
+.expand-enter-active,
+.expand-leave-active {
+  transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  max-height: 500px;
+  opacity: 1;
+  transform: translateY(0);
+  overflow: hidden;
+}
+
+.expand-enter-from,
+.expand-leave-to {
+  max-height: 0;
+  opacity: 0;
+  transform: translateY(-10px);
+  overflow: hidden;
 }
 </style> 
