@@ -1,8 +1,9 @@
 <template>
   <VirtualScroll
-    :items="loadedTasks"
+    :items="taskRequestStore.requests"
     :loading="loading"
     ref="virtualScroll"
+    @loadMore="loadMoreItems"
   >
     <template #default="{ item }">
       <RequestCard
@@ -23,23 +24,26 @@ import { useTaskRequestStore } from '@/stores/taskRequestStore'
 import type { TaskRequest } from '@/stores/taskRequestStore'
 
 const taskRequestStore = useTaskRequestStore()
-const allTasks = taskRequestStore.requests
 
 const loading = ref(false)
-const loadedTasks = ref<TaskRequest[]>([])
 const virtualScroll = ref<InstanceType<typeof VirtualScroll> | null>(null)
 
 // Функция для загрузки элементов
 const loadMoreItems = async () => {
+  console.log('loadMoreItems')
   if (loading.value) return
   
   loading.value = true
+
+  const newRequests = await taskRequestStore.fetchRequests()
   
   // Имитация задержки загрузки
   await new Promise(resolve => setTimeout(resolve, 500))
-  
+
   // Загружаем все оставшиеся элементы
-  loadedTasks.value = [...loadedTasks.value, ...allTasks.slice(loadedTasks.value.length)]
+  taskRequestStore.requests = [...taskRequestStore.requests, ...newRequests]
+  
+  console.log(taskRequestStore.requests.length)
   
   loading.value = false
 }
