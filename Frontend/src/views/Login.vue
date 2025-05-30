@@ -4,6 +4,7 @@
       <h1 class="login-title">
         <span class="bold">А</span>вт<span class="gradient">оризация</span>
       </h1>
+      <hr class="login-divider" />
       <div class="form-group">
         <label for="email">Email</label>
         <input
@@ -47,8 +48,9 @@ const handleLogin = () => userStore.login(email.value, password.value)
 
 <style scoped>
 .login-container {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 100vh;
   width: 100vw;
   background-color: #fff;
@@ -58,32 +60,41 @@ const handleLogin = () => userStore.login(email.value, password.value)
 }
 
 .login-form {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   background: #fff;
   box-shadow: 0 4px 24px 0 rgba(123, 92, 255, 0.10), 0 1.5px 8px 0 rgba(0,0,0,0.07);
   padding: 2.5rem 2.5rem 2rem 2.5rem;
-  border-radius: 18px;
-  width: min(500px, 95%);
+  border-radius: 14px;
+  width: min(420px, 98%);
   margin: 0 auto;
-  display: flex;
-  flex-direction: column;
-  gap: 2.5rem;
+  gap: 2rem;
 }
 
 .login-title {
-  font-size: 5rem;
+  font-size: 2.5rem;
   font-weight: 900;
-  margin-bottom: 2.5rem;
-  text-align: left;
+  margin-bottom: 0.7rem;
+  text-align: center;
   letter-spacing: 0.01em;
   line-height: 1;
-  margin-top: 1.5rem;
-  margin-left: 0.5rem;
+  margin-top: 1rem;
+  margin-left: 0;
   position: relative;
-  width: fit-content;
-  border-bottom: 4px solid #2196f3;
-  padding-bottom: 0.2em;
+  width: 100%;
+  border: none;
+  padding-bottom: 0;
   user-select: none;
 }
+
+.login-divider {
+  width: 100%;
+  border: none;
+  border-top: 2px solid #e7e1ec;
+  margin: 0 0 1.2rem 0;
+}
+
 .login-title .bold {
   color: #444;
   font-weight: 900;
@@ -107,18 +118,18 @@ label {
   display: block;
   margin-bottom: 0.5rem;
   color: #222;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 700;
 }
 
 .custom-input {
   width: 100%;
-  padding: 1.2rem 1.2rem 1.2rem 1.2rem;
+  padding: 0.8rem 1rem 0.8rem 1rem;
   border: none;
   border-bottom: 2px solid #8884;
-  border-radius: 8px 8px 0 0;
+  border-radius: 7px 7px 0 0;
   background: #e7e1ec;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 700;
   color: #2a262b;
   margin-bottom: 0.5rem;
@@ -140,13 +151,13 @@ label {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin-top: 1.5rem;
+  margin-top: 1rem;
 }
 
 .forgot-link {
   color: #0000ff;
   text-decoration: underline;
-  font-size: 1.3rem;
+  font-size: 1rem;
   font-weight: 700;
   margin-left: 0.2rem;
   transition: color 0.2s;
@@ -156,19 +167,61 @@ label {
 }
 
 .login-button {
-  padding: 0.9rem 2.5rem;
+  padding: 0.7rem 1.5rem;
   background-color: #e7e1ec;
   color: #2a262b;
   border: 2px solid #8884;
   border-radius: 4px;
-  font-size: 1.5rem;
+  font-size: 1.1rem;
   font-weight: 700;
   cursor: pointer;
   transition: background 0.2s, color 0.2s;
-  margin-left: 1.5rem;
+  margin-left: 1rem;
 }
 .login-button:hover {
   background: #d1c6e6;
   color: #7b5cff;
+}
+
+@media (max-width: 600px) {
+  .login-form {
+    width: 98%;
+    padding: 0.7rem 0.5rem 0.7rem 0.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px 0 rgba(123, 92, 255, 0.10), 0 1px 4px 0 rgba(0,0,0,0.07);
+    gap: 1.2rem;
+    align-items: center;
+  }
+  .login-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    border-bottom-width: 0;
+    padding-bottom: 0;
+    text-align: center;
+  }
+  .login-divider {
+    margin-bottom: 0.7rem;
+  }
+  label {
+    font-size: 0.95rem;
+  }
+  .custom-input {
+    padding: 0.6rem 0.7rem 0.6rem 0.7rem;
+    font-size: 0.95rem;
+    border-radius: 5px 5px 0 0;
+  }
+  .form-footer {
+    margin-top: 0.7rem;
+  }
+  .forgot-link {
+    font-size: 0.9rem;
+  }
+  .login-button {
+    padding: 0.5rem 1rem;
+    font-size: 0.95rem;
+    border-radius: 3px;
+    margin-left: 0.5rem;
+  }
 }
 </style>
