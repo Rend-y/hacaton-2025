@@ -32,28 +32,18 @@
 
 <script setup>
 import { ref } from 'vue'
+import { useUserStore } from '@/stores/userStore'
 
-const email = ref('')
+const userStore = useUserStore()
 const password = ref('')
+const email = ref('')
 
-const handleLogin = async () => {
-  try {
-    // TODO: Implement login logic here
-    console.log('Login attempt with:', { email: email.value, password: password.value })
-  } catch (error) {
-    console.error('Login error:', error)
-  }
-}
+const handleLogin = () => userStore.login(email.value, password.value)
+
+
 </script>
 
 <style scoped>
-
-body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  background-color: rebeccapurple;
-}
 
 .login-container {
   display: grid;
