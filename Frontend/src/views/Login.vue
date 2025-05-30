@@ -1,133 +1,164 @@
 <template>
   <div class="login-container">
     <form @submit.prevent="handleLogin" class="login-form">
-      <h2>Вход в систему</h2>
-      
-      <div class="form-group">
-        <label for="email">Email</label>
-        <input
-          type="email"
-          id="email"
-          v-model="email"
-          required
-          placeholder="Введите ваш email"
-        />
+      <h1 class="login-title">
+        <span class="gradient">Авторизация</span>
+      </h1>
+      <hr class="login-divider" />
+      <CustomInput
+        v-model="email"
+        label="Email"
+        type="email"
+        id="email"
+        required
+        placeholder="Email"
+      />
+      <CustomInput
+        v-model="password"
+        label="Пароль"
+        type="password"
+        id="password"
+        required
+        placeholder="Password"
+      />
+      <div class="form-footer">
+        <button type="submit" class="login-button">Войти</button>
       </div>
-
-      <div class="form-group">
-        <label for="password">Пароль</label>
-        <input
-          type="password"
-          id="password"
-          v-model="password"
-          required
-          placeholder="Введите ваш пароль"
-        />
-      </div>
-
-      <button type="submit" class="login-button">Войти</button>
     </form>
   </div>
 </template>
 
 <script setup>
 import { ref } from 'vue'
+import { useUserStore } from '@/stores/userStore'
+import CustomInput from '@/components/CustomInput.vue'
 
-const email = ref('')
+const userStore = useUserStore()
 const password = ref('')
+const email = ref('')
 
-const handleLogin = async () => {
-  try {
-    // TODO: Implement login logic here
-    console.log('Login attempt with:', { email: email.value, password: password.value })
-  } catch (error) {
-    console.error('Login error:', error)
-  }
-}
+const handleLogin = () => userStore.login(email.value, password.value)
 </script>
 
 <style scoped>
-
-body {
-  margin: 0;
-  padding: 0;
-  overflow-x: hidden;
-  background-color: rebeccapurple;
-}
-
 .login-container {
-  display: grid;
-  place-items: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   height: 100vh;
   width: 100vw;
-  background-color: #f5f5f5;
+  background-color: #fff;
   margin: 0;
   padding: 1rem;
   box-sizing: border-box;
 }
 
 .login-form {
-  background: white;
-  padding: 2.5rem;
-  border-radius: 8px;
-  box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-  width: min(400px, 90%);
-  margin: 0 auto;
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  align-items: center;
+  background: #fff;
+  box-shadow: 0 4px 24px 0 rgba(123, 92, 255, 0.10), 0 1.5px 8px 0 rgba(0,0,0,0.07);
+  padding: 2.5rem 2.5rem 2rem 2.5rem;
+  border-radius: 14px;
+  width: min(420px, 98%);
+  margin: 0 auto;
+  gap: 2rem;
 }
 
-@media (max-width: 480px) {
-  .login-form {
-    padding: 1.5rem;
-  }
-}
-
-h2 {
+.login-title {
+  font-size: 2.5rem;
+  font-weight: 900;
+  margin-bottom: 0.7rem;
   text-align: center;
-  color: #333;
-  margin-bottom: 1.5rem;
-}
-
-.form-group {
+  letter-spacing: 0.01em;
+  line-height: 1;
+  margin-top: 1rem;
+  margin-left: 0;
+  position: relative;
   width: 100%;
+  border: none;
+  padding-bottom: 0;
+  user-select: none;
 }
 
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #666;
-}
-
-input {
+.login-divider {
   width: 100%;
-  padding: 0.75rem;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 1rem;
-  box-sizing: border-box;
+  border: none;
+  border-top: 2px solid #e7e1ec;
+  margin: 0 0 1.2rem 0;
 }
 
-input:focus {
-  outline: none;
-  border-color: #4CAF50;
+.login-title .gradient {
+  background: linear-gradient(90deg, #7b5cff 30%, #b86adf 70%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-fill-color: transparent;
+  font-weight: 900;
+}
+
+.form-footer {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin-top: 1rem;
+  width: 100%;
 }
 
 .login-button {
   width: 100%;
-  padding: 0.75rem;
-  background-color: #4CAF50;
+  max-width: 100%;
+  padding: 0.8rem 1rem;
+  background: linear-gradient(90deg, #7b5cff 30%, #b86adf 70%);
   color: white;
   border: none;
-  border-radius: 4px;
-  font-size: 1rem;
+  border-radius: 8px;
+  font-size: 1.1rem;
+  font-weight: 700;
   cursor: pointer;
-  transition: background-color 0.3s;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 15px rgba(123, 92, 255, 0.2);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
   box-sizing: border-box;
 }
 
 .login-button:hover {
-  background-color: #45a049;
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(123, 92, 255, 0.3);
+  background: linear-gradient(90deg, #8b6cff 30%, #c87aef 70%);
+}
+
+.login-button:active {
+  transform: translateY(0);
+  box-shadow: 0 2px 10px rgba(123, 92, 255, 0.2);
+}
+
+@media (max-width: 600px) {
+  .login-form {
+    width: 98%;
+    padding: 0.7rem 0.5rem 0.7rem 0.5rem;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px 0 rgba(123, 92, 255, 0.10), 0 1px 4px 0 rgba(0,0,0,0.07);
+    gap: 1.2rem;
+    align-items: center;
+  }
+  .login-title {
+    font-size: 1.5rem;
+    margin-bottom: 0.5rem;
+    margin-top: 0.5rem;
+    border-bottom-width: 0;
+    padding-bottom: 0;
+    text-align: center;
+  }
+  .login-divider {
+    margin-bottom: 0.7rem;
+  }
+  .login-button {
+    padding: 0.7rem 1rem;
+    font-size: 1rem;
+    border-radius: 6px;
+  }
 }
 </style>
