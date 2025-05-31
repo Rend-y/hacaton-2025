@@ -111,26 +111,33 @@
           
           <div class="task-request__section-content">
             <div class="task-request__field">
-              <CustomInput
-                id="estimated-time"
+              <label class="task-request__label">Ориентировочные сроки (в месяцах)</label>
+              <input
+                type="range"
+                min="1"
+                :max="MAX_TIME"
+                step="1"
                 v-model="formData.estimatedTime"
-                label="Ориентировочные сроки (в месяцах)"
-                type="number"
-                required
-                placeholder="Введите срок"
-                :readonly="true"
+                class="task-request__slider"
               />
+              <div class="task-request__slider-value">
+                {{ formData.estimatedTime }} мес.
+              </div>
             </div>
 
             <div class="task-request__field">
-              <CustomInput
-                id="estimated-budget"
+              <label class="task-request__label">Ориентировочный бюджет (в рублях)</label>
+              <input
+                type="range"
+                min="50000"
+                :max="MAX_BUDGET"
+                step="50000"
                 v-model="formData.estimatedBudget"
-                label="Ориентировочный бюджет (в рублях)"
-                type="number"
-                required
-                placeholder="Введите бюджет"
+                class="task-request__slider"
               />
+              <div class="task-request__slider-value">
+                {{ Number(formData.estimatedBudget).toLocaleString() }} ₽
+              </div>
             </div>
           </div>
         </section>
@@ -194,22 +201,30 @@ const applicationTypes = [
   {
     value: 'web',
     label: 'Веб-приложение',
-    description: 'Сайт или веб-приложение, доступное через браузер'
+    description: 'Сайт или веб-приложение, доступное через браузер',
+    basePrice: 100000,
+    baseMonth: 2
   },
   {
     value: 'mobile',
     label: 'Мобильное приложение',
-    description: 'Приложение для iOS и/или Android'
+    description: 'Приложение для iOS и/или Android',
+    basePrice: 150000,
+    baseMonth: 3
   },
   {
     value: 'desktop',
     label: 'Десктопное приложение',
-    description: 'Приложение для Windows, macOS или Linux'
+    description: 'Приложение для Windows, macOS или Linux',
+    basePrice: 200000,
+    baseMonth: 4
   },
   {
     value: 'other',
     label: 'Другое',
-    description: 'Иной тип приложения или сервиса'
+    description: 'Иной тип приложения или сервиса',
+    basePrice: 200000,
+    baseMonth: 2
   }
 ]
 
@@ -243,7 +258,6 @@ const formData = ref({
   estimatedPrice: '',
   email: '',
   phone: '',
-  complexity: 'simple',
   featuresList: [],
   featuresOther: '',
   extraParams: [],
@@ -261,11 +275,45 @@ const formData = ref({
 const loading = computed(() => store.isLoading)
 const error = computed(() => store.getError)
 
+const baseTime = ref(1)
+const baseBudget = ref(50000)
+
+const MIN_TIME = 1
+const MIN_BUDGET = 50000
+const MAX_TIME = 36
+const MAX_BUDGET = 5000000
+const MONTH_COST_MULTIPLIER = 1.5
+const K_SMOOTH = 0.5
+
+let updating = false
+
+const recommendedTime = computed(() => baseTime.value)
+const recommendedBudget = computed(() => baseBudget.value)
+
+watch(() => formData.value.estimatedTime, (newTime) => {
+  if (updating) return
+  updating = true
+  const t = Math.max(MIN_TIME, Math.min(Number(newTime), MAX_TIME))
+  let newBudget = MONTH_COST_MULTIPLIER * baseBudget.value * Math.pow(baseTime.value / t, 1 / K_SMOOTH)
+  newBudget = Math.max(MIN_BUDGET, Math.min(Math.round(newBudget), MAX_BUDGET))
+  formData.value.estimatedBudget = String(newBudget)
+  updating = false
+})
+
+watch(() => formData.value.estimatedBudget, (newBudget) => {
+  if (updating) return
+  updating = true
+  const b = Math.max(MIN_BUDGET, Math.min(Number(newBudget), MAX_BUDGET))
+  let newTime = b === 0 ? MAX_TIME : baseTime.value * Math.pow(MONTH_COST_MULTIPLIER * baseBudget.value / b, K_SMOOTH)
+  newTime = Math.max(MIN_TIME, Math.min(Math.round(newTime), MAX_TIME))
+  formData.value.estimatedTime = String(newTime)
+  updating = false
+})
+
 function recalculateEstimatedTime() {
   let base = 0
   let basePrice = 0
   const type = formData.value.applicationType
-  const complexity = formData.value.complexity
   const featuresList = formData.value.featuresList
   const extraParams = formData.value.extraParams
 
@@ -275,11 +323,6 @@ function recalculateEstimatedTime() {
   else if (type === 'desktop') { base = 4; basePrice = 200000 }
   else if (type === 'other') { base = 2; basePrice = 100000 }
   else { base = 0; basePrice = 0 }
-
-  // Сложность
-  let complexityMultiplier = 1
-  if (complexity === 'medium') { base += 1; complexityMultiplier = 1.3 }
-  if (complexity === 'hard') { base += 2; complexityMultiplier = 1.6 }
 
   // Учитываем количество функций
   const featuresCount = featuresList.filter(f => f !== 'other').length
@@ -308,11 +351,13 @@ function recalculateEstimatedTime() {
 
   let result = Math.round(base * multiplier)
   if (result < 1) result = 1
-  formData.value.estimatedTime = result
+  baseTime.value = result
+  formData.value.estimatedTime = String(result)
 
   // Итоговая цена
-  let price = Math.round(basePrice * priceMultiplier * complexityMultiplier)
-  formData.value.estimatedBudget = price
+  let price = Math.round(basePrice * priceMultiplier)
+  baseBudget.value = price
+  formData.value.estimatedBudget = String(price)
   formData.value.estimatedPrice = price
 }
 
@@ -351,7 +396,6 @@ function toggleExtraParam(value) {
 watch(
   () => [
     formData.value.applicationType,
-    formData.value.complexity
   ],
   recalculateEstimatedTime
 )
@@ -642,5 +686,16 @@ watch(
   background: linear-gradient(90deg, #885fff 0%, #b16fff 100%);
   color: #fff;
   box-shadow: 0 2px 8px 0 rgba(136,95,255,0.12);
+}
+
+.task-request__slider {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+.task-request__slider-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #885fff;
+  margin-bottom: 0.2rem;
 }
 </style>
