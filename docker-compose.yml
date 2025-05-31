@@ -11,7 +11,9 @@ services:
       - DEBUG=1
       - DJANGO_ALLOWED_HOSTS=localhost,127.0.0.1,0.0.0.0
     volumes:
-      - ./backend:/app
+      - type: bind
+        source: ./backend
+        target: /app
     networks:
       - app-network
 
@@ -22,8 +24,12 @@ services:
     ports:
       - "5173:5173"
     volumes:
-      - ./Frontend:/app
-      - /app/node_modules
+      - type: bind
+        source: ./Frontend
+        target: /app
+      - type: volume
+        source: node_modules
+        target: /app/node_modules
     depends_on:
       - backend
     networks:
@@ -33,4 +39,7 @@ services:
 
 networks:
   app-network:
-    driver: bridge 
+    driver: bridge
+
+volumes:
+  node_modules: 
