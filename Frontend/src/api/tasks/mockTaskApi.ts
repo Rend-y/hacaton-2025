@@ -1,3 +1,4 @@
+import axios from 'axios'
 import type { TaskRequest, TaskStatus } from './mockData'
 import { bigMockTasks } from './mockData'
 
@@ -9,31 +10,37 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
 /**
  * Получение списка задач с пагинацией
  */
-export async function fetchMockTasks(page = 1, pageSize = 10): Promise<TaskRequest[]> {
-  await delay(500) // Имитация задержки сети
-  const start = (page - 1) * pageSize
-  const end = start + pageSize
-  return bigMockTasks().slice(start, end)
+export async function fetchTasks(token: string): Promise<TaskRequest[]> {
+  const response = await axios.get('/api/tasks', {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  return response.data
 }
 
 /**
  * Получение задачи по ID
  */
-export async function fetchMockTaskById(id: number): Promise<TaskRequest | null> {
-  await delay(300)
-  const index = Math.floor(Math.random() * bigMockTasks().length)
-  const task = bigMockTasks()[index]
-  return {
-    ...task,
-    id
-  }
+export async function fetchMockTaskById(id: number, token: string): Promise<TaskRequest | null> {
+  const response = await axios.get(`/api/tasks/${id}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+  return response.data
 }
 
 export async function updateMockTask(id: number, task: TaskRequest): Promise<TaskRequest | null> {
   await delay(300)
   return {
-    ...task,
-    id
+    id,
+    preview: task.preview,
+    title: task.title,
+    description: task.description,
+    status: task.status,
+    deadline: task.deadline,
+    companyName: task.companyName,
   }
 }
 
@@ -45,17 +52,15 @@ export async function updateMockTaskStatus(id: number, status: TaskStatus): Prom
   return true
 }
 
-/**
- * Создание новой задачи
- */
-export async function createMockTask(task: Omit<TaskRequest, 'id' | 'status'>): Promise<TaskRequest> {
-  await delay(500)
-  const newTask: TaskRequest = {
-    ...task,
-    id: Math.floor(Math.random() * 1000000),
-    status: 'new' as TaskStatus,
-  }
-  return newTask
+export async function createTask(title: string, description: string, deadline: number, content: object): Promise<TaskRequest> {
+  console.log(title, description, deadline, content)
+  const response = await axios.post('/api/tasks', {
+    name: title,
+    description: description,
+    deadline: new Date(Date.now() + (deadline * 24 * 60 * 60 * 1000)).toISOString(),
+    content: content,
+  })
+  return response.data
 }
 
 /**

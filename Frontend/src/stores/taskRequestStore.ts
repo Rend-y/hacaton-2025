@@ -1,6 +1,7 @@
-import { deleteMockTask, fetchMockTaskById, fetchMockTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
+import { createTask, deleteMockTask, fetchMockTaskById, fetchTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
 import type { TaskRequest as ApiTaskRequest } from '@/api/tasks/mockData'
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 export interface FormTaskRequest {
   id: number;
@@ -132,32 +133,18 @@ export const useTaskRequestStore = defineStore('taskRequest', {
   },
 
   actions: {
-    clearRequests(): void {
-      this.requests = []
-      this.currentRequest = null
-      this.error = null
-    },
-
     async createRequest(requestData: FormTaskRequest): Promise<FormTaskRequest> {
-      this.loading = true
-      this.error = null
-      
-      try {
-        const newRequest = {
-          ...requestData,
-          id: Date.now(),
-          status: RequestStatus.NEW
-        }
-        
-        this.requests.push(newRequest)
-        this.currentRequest = newRequest
-        return newRequest
-      } catch (error: any) {
-        this.error = 'Произошла ошибка при создании заявки'
-        throw error
-      } finally {
-        this.loading = false
-      }
+      console.log('requestData', requestData)
+        console.log(requestData.project.name, requestData.project.description, requestData.estimation.time, requestData.content)
+        const newTask = await createTask(
+          requestData.project.name,
+          requestData.project.description,
+          requestData.estimation.time.months,
+          requestData
+        );
+        this.requests.push(convertApiToFormRequest(newTask))
+        this.currentRequest = convertApiToFormRequest(newTask)
+        return convertApiToFormRequest(newTask)
     },
 
     async fetchRequests(): Promise<FormTaskRequest[]> {
@@ -165,8 +152,9 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       this.error = null
       
       try {
-        const apiRequests = await fetchMockTasks(1, 10)
-        const convertedRequests = apiRequests.map(convertApiToFormRequest)
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]
+        const requests = await fetchTasks(token as string)
+        const convertedRequests = requests.map(task => convertApiToFormRequest(task))
         this.requests.push(...convertedRequests)
         return convertedRequests
       } catch (error: any) {

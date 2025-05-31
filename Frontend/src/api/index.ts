@@ -9,6 +9,6 @@ export const api = {
             },
             body: JSON.stringify({ email, password }),
         });
-        return await response.json();
+        return (await response.json()).access_token;
     }
 }
