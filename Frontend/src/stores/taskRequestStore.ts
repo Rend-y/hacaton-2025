@@ -1,14 +1,44 @@
-import { createTask, deleteMockTask, fetchMockTaskById, fetchTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
+import { deleteMockTask, fetchMockTaskById, fetchMockTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
+import type { TaskRequest as ApiTaskRequest } from '@/api/tasks/mockData'
 import { defineStore } from 'pinia'
 
-export interface TaskRequest {
-  id: number
-  title: string
-  description: string
-  status: RequestStatus
-  deadline: string // ISO date string
-  assignedTeamId?: string
-  companyName: string
+export interface FormTaskRequest {
+  id: number;
+  project: {
+    name: string;
+    description: string;
+    type: string;
+  };
+  features: {
+    core: string[];
+    custom: string | null;
+  };
+  requirements: {
+    design: boolean;
+    externalIntegration: boolean;
+    support: boolean;
+    paymentIntegration: boolean;
+    adminPanel: boolean;
+  };
+  estimation: {
+    time: {
+      months: number;
+      recommended: number;
+    };
+    budget: {
+      amount: number;
+      recommended: number;
+    };
+  };
+  contact: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  status: RequestStatus;
+  preview: string;
+  assignedTeamId?: string;
+  deadline?: string;
 }
 
 export enum RequestStatus {
@@ -24,10 +54,66 @@ export const statusLabels: Record<RequestStatus, string> = {
 }
 
 interface TaskRequestState {
-  requests: TaskRequest[]
-  currentRequest: TaskRequest | null
-  loading: boolean
-  error: string | null,
+  requests: FormTaskRequest[];
+  currentRequest: FormTaskRequest | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Функция для конвертации API формата в формат формы
+function convertApiToFormRequest(apiRequest: ApiTaskRequest): FormTaskRequest {
+  return {
+    id: apiRequest.id,
+    project: {
+      name: apiRequest.title,
+      description: apiRequest.description,
+      type: 'web' // дефолтное значение
+    },
+    features: {
+      core: [],
+      custom: null
+    },
+    requirements: {
+      design: false,
+      externalIntegration: false,
+      support: false,
+      paymentIntegration: false,
+      adminPanel: false
+    },
+    estimation: {
+      time: {
+        months: 3,
+        recommended: 3
+      },
+      budget: {
+        amount: 150000,
+        recommended: 150000
+      }
+    },
+    contact: {
+      name: apiRequest.companyName, // используем название компании как имя контакта
+      email: 'contact@example.com',
+      phone: '+7 (999) 123-45-67'
+    },
+    status: apiRequest.status as RequestStatus,
+    preview: apiRequest.preview,
+    deadline: apiRequest.deadline,
+    assignedTeamId: apiRequest.assignedTeamId
+  }
+}
+
+// Функция для конвертации формата формы в API формат
+function convertFormToApiRequest(request: FormTaskRequest): ApiTaskRequest {
+  return {
+    id: request.id,
+    title: request.project.name,
+    description: request.project.description,
+    status: request.status,
+    preview: request.preview,
+    deadline: request.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    companyName: request.contact.name,
+    assignedTeamId: request.assignedTeamId
+  }
 }
 
 export const useTaskRequestStore = defineStore('taskRequest', {
@@ -35,12 +121,12 @@ export const useTaskRequestStore = defineStore('taskRequest', {
     requests: [],
     currentRequest: null,
     loading: false,
-    error: null,
+    error: null
   }),
 
   getters: {
-    getRequests: (state): TaskRequest[] => state.requests,
-    getCurrentRequest: (state): TaskRequest | null => state.currentRequest,
+    getRequests: (state): FormTaskRequest[] => state.requests,
+    getCurrentRequest: (state): FormTaskRequest | null => state.currentRequest,
     isLoading: (state): boolean => state.loading,
     getError: (state): string | null => state.error
   },
@@ -60,7 +146,7 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         return {...newTask, companyName: requestData.project.name, status: RequestStatus.NEW}
     },
 
-    async fetchRequests(): Promise<void> {
+    async fetchRequests(): Promise<FormTaskRequest[]> {
       this.loading = true
       this.error = null
       
@@ -72,11 +158,12 @@ export const useTaskRequestStore = defineStore('taskRequest', {
           deadline: new Date(Date.now() + Math.floor(Math.random() * 14 + 1) * 24 * 60 * 60 * 1000).toISOString() // Random deadline between 1-14 days
         }))
         this.requests.push(...convertedRequests)
+        return convertedRequests
       } catch (error: any) {
-        this.error = 'Произошла ошибка при загрузке заявок';
-        throw error;
+        this.error = 'Произошла ошибка при загрузке заявок'
+        throw error
       } finally {
-        this.loading = false;
+        this.loading = false
       }
     },
 
@@ -85,11 +172,11 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       this.error = null
       
       try {
-        const request = await fetchMockTaskById(id)
-        if (!request) {
+        const apiRequest = await fetchMockTaskById(id)
+        if (!apiRequest) {
           throw new Error('Заявка не найдена')
         }
-        this.currentRequest = request as TaskRequest
+        this.currentRequest = convertApiToFormRequest(apiRequest)
       } catch (error: any) {
         this.error = 'Произошла ошибка при загрузке заявки'
         throw error
@@ -98,23 +185,30 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       }
     },
 
-    async updateRequest(id: number, requestData: TaskRequest): Promise<TaskRequest> {
+    async updateRequest(id: number, requestData: FormTaskRequest): Promise<FormTaskRequest> {
       this.loading = true
       this.error = null
       
       try {
-        // Mock response
-        const updatedRequest = await updateMockTask(id, requestData)
-        if (!updatedRequest) {
+        const apiRequest = convertFormToApiRequest(requestData)
+        const updatedApiRequest = await updateMockTask(id, apiRequest)
+        
+        if (!updatedApiRequest) {
           throw new Error('Заявка не найдена')
+        }
+
+        const convertedRequest = {
+          ...requestData,
+          id: updatedApiRequest.id,
+          status: updatedApiRequest.status as RequestStatus
         }
       
         const index = this.requests.findIndex(request => request.id === id)
         if (index !== -1) {
-          this.requests[index] = updatedRequest as TaskRequest
+          this.requests[index] = convertedRequest
         }
-        this.currentRequest = updatedRequest as TaskRequest
-        return updatedRequest as TaskRequest
+        this.currentRequest = convertedRequest
+        return convertedRequest
       } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
