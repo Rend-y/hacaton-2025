@@ -128,7 +128,7 @@ const closeCreateModal = () => {
   editTeam.value = null
 }
 
-const handleTeamModalSubmit = (teamData: Partial<Team> & {id?: number}) => {
+const handleTeamModalSubmit = (teamData: Team) => {
   if (teamData.id !== undefined) {
     teamStore.updateTeam(teamData)
   } else {
