@@ -1,3 +1,4 @@
+import { deleteMockTask, fetchMockTaskById, fetchMockTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
 import { defineStore } from 'pinia'
 
 export interface TaskRequest {
@@ -222,53 +223,17 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       }
     },
 
-    async fetchRequests(): Promise<TaskRequest[]> {
+    async fetchRequests(): Promise<void> {
       this.loading = true
       this.error = null
       
       try {
-        // Generate random tasks
-        const taskTemplates: Array<Partial<Omit<TaskRequest, 'id' | 'status'>>> = [
-          {
-            title: 'FoodDelivery App',
-            preview: 'Разработка мобильного приложения для доставки еды с функцией отслеживания заказа...',
-            description: 'Необходимо разработать кроссплатформенное мобильное приложение для доставки еды с функциями: геолокация, отслеживание заказа в реальном времени, система рейтингов и отзывов.'
-          },
-          {
-            title: 'EduPlatform',
-            preview: 'Создание платформы для онлайн-обучения с поддержкой видеоконференций...',
-            description: 'Разработка веб-платформы для проведения онлайн-курсов с интеграцией видеоконференций, системой тестирования и отслеживания прогресса студентов.'
-          },
-          {
-            title: 'Warehouse Management System',
-            preview: 'Разработка системы управления складом с интеграцией RFID...',
-            description: 'Создание комплексной системы управления складом с поддержкой RFID-меток, автоматическим учетом товаров и генерацией отчетов.'
-          },
-          {
-            title: 'Digital Marketplace',
-            preview: 'Создание маркетплейса для продажи цифровых товаров...',
-            description: 'Разработка платформы для продажи цифровых товаров с системой защиты авторских прав и автоматической доставкой.'
-          },
-          {
-            title: 'Health Monitoring System',
-            preview: 'Разработка системы мониторинга состояния здоровья пациентов...',
-            description: 'Создание системы для удаленного мониторинга жизненных показателей пациентов с оповещением врачей в критических ситуациях.'
-          }
-        ];
-
-        const statuses = Object.values(RequestStatus);
-        const mockRequests: TaskRequest[] = Array.from({ length: 20 }, (_, index) => {
-          const template: Partial<Omit<TaskRequest, 'id' | 'status'>> = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
-          const status:RequestStatus = statuses[Math.floor(Math.random() * statuses.length)];
-          
-          return {
-            id: this.requests.length + 1,
-            ...template,
-            status
-          } as TaskRequest;
-        });
-
-        return mockRequests;
+        const requests = await fetchMockTasks(1, 10)
+        const convertedRequests = requests.map(request => ({
+          ...request,
+          status: request.status as RequestStatus
+        }))
+        this.requests.push(...convertedRequests)
       } catch (error: any) {
         this.error = 'Произошла ошибка при загрузке заявок';
         throw error;
@@ -277,21 +242,16 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       }
     },
 
-    async fetchRequestById(id: number): Promise<TaskRequest> {
+    async fetchRequestById(id: number): Promise<void> {
       this.loading = true
       this.error = null
       
       try {
-        // Mock data
-        const mockRequest: TaskRequest = {
-          id,
-          preview: 'Разработка мобильного приложения для доставки еды с функцией отслеживания заказа...',
-          title: 'FoodDelivery App',
-          description: 'Необходимо разработать кроссплатформенное мобильное приложение для доставки еды с функциями: геолокация, отслеживание заказа в реальном времени, система рейтингов и отзывов.',
-          status: RequestStatus.COMPLETED
+        const request = await fetchMockTaskById(id)
+        if (!request) {
+          throw new Error('Заявка не найдена')
         }
-        this.currentRequest = mockRequest
-        return mockRequest
+        this.currentRequest = request as TaskRequest
       } catch (error: any) {
         this.error = 'Произошла ошибка при загрузке заявки'
         throw error
@@ -300,24 +260,24 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       }
     },
 
-    async updateRequest(id: number, requestData: Partial<TaskRequest>): Promise<TaskRequest> {
+    async updateRequest(id: number, requestData: TaskRequest): Promise<TaskRequest> {
       this.loading = true
       this.error = null
       
       try {
         // Mock response
-        const updatedRequest = {
-          id,
-          ...requestData
-        } as TaskRequest
-        
+        const updatedRequest = await updateMockTask(id, requestData)
+        if (!updatedRequest) {
+          throw new Error('Заявка не найдена')
+        }
+      
         const index = this.requests.findIndex(request => request.id === id)
         if (index !== -1) {
-          this.requests[index] = updatedRequest
+          this.requests[index] = updatedRequest as TaskRequest
         }
-        this.currentRequest = updatedRequest
-        return updatedRequest
-      } catch (error: any) {
+        this.currentRequest = updatedRequest as TaskRequest
+        return updatedRequest as TaskRequest
+      } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
       } finally {
@@ -330,8 +290,14 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       this.error = null
       
       try {
-        // Mock deletion
-        this.requests = this.requests.filter(request => request.id !== id)
+        const deletedId = await deleteMockTask(id)
+        if (deletedId === null) {
+          throw new Error('Заявка не найдена')
+        }
+        const index = this.requests.findIndex(request => request.id === id) 
+        if (index !== -1) {
+          this.requests.splice(index, 1)
+        }
         if (this.currentRequest?.id === id) {
           this.currentRequest = null
         }
