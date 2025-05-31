@@ -16,9 +16,18 @@ const router = createRouter({
       path: '/admin/login',
       name: 'admin-login',
       component: Login,
+      beforeEnter: (to, from, next) => {
+        const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
+        const token = tokenCookie ? tokenCookie.split('=')[1] : null;
+        if (!token) {
+          next()
+        } else {
+          next('admin')
+        }
+      },
     },
     {
-      path: '/admin',
+      path: '/admin/',
       name: 'admin-panel',
       component: AdminPanel,
       beforeEnter: (to, from, next) => {
