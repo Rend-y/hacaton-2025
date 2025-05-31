@@ -24,22 +24,16 @@ export async function fetchMockTaskById(id: number): Promise<TaskRequest | null>
   const index = Math.floor(Math.random() * bigMockTasks().length)
   const task = bigMockTasks()[index]
   return {
-    id,
-    preview: task.preview,
-    title: task.title,
-    description: task.description,
-    status: task.status,
+    ...task,
+    id
   }
 }
 
 export async function updateMockTask(id: number, task: TaskRequest): Promise<TaskRequest | null> {
   await delay(300)
   return {
-    id,
-    preview: task.preview,
-    title: task.title,
-    description: task.description,
-    status: task.status,
+    ...task,
+    id
   }
 }
 

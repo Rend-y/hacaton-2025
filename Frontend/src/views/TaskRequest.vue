@@ -16,7 +16,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="project-name"
-                v-model="formData.projectName"
+                v-model="formData.project.name"
                 label="Название проекта"
                 type="text"
                 required
@@ -31,7 +31,7 @@
                 <div v-for="type in applicationTypes" :key="type.value" class="task-request__radio-option">
                   <input 
                     :id="type.value"
-                    v-model="formData.applicationType"
+                    v-model="formData.project.type"
                     :value="type.value"
                     type="radio"
                     required
@@ -50,7 +50,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="project-description"
-                v-model="formData.description"
+                v-model="formData.project.description"
                 label="Описание проекта"
                 type="textarea"
                 required
@@ -58,6 +58,7 @@
                 placeholder="Опишите ваш проект"
               />
             </div>
+
             <!-- Ключевые функции -->
             <div class="task-request__field">
               <label class="task-request__label">Ключевые функции</label>
@@ -67,17 +68,18 @@
                   :key="feature.value"
                   type="button"
                   class="task-request__tag"
-                  :class="{ 'task-request__tag--active': formData.featuresList.includes(feature.value) }"
+                  :class="{ 'task-request__tag--active': formData.features.core.includes(feature.value) }"
                   @click="toggleFeature(feature.value)"
                 >
                   {{ feature.label }}
                 </button>
               </div>
             </div>
-            <div v-if="formData.featuresList.includes('other')" class="task-request__field">
+
+            <div v-if="formData.features.core.includes('other')" class="task-request__field">
               <CustomInput
                 id="features-other"
-                v-model="formData.featuresOther"
+                v-model="formData.features.custom"
                 label="Опишите ключевые функции"
                 type="textarea"
                 :rows="3"
@@ -85,8 +87,8 @@
                 placeholder="Опишите, какие функции нужны"
               />
             </div>
-          
-                        <div class="task-request__field">
+
+            <div class="task-request__field">
               <label class="task-request__label">Дополнительные функции</label>
               <div class="task-request__tags-group">
                 <button
@@ -94,7 +96,7 @@
                   :key="param.value"
                   type="button"
                   class="task-request__tag"
-                  :class="{ 'task-request__tag--active': formData.extraParams.includes(param.value) }"
+                  :class="{ 'task-request__tag--active': formData.requirements[param.value] }"
                   @click="toggleExtraParam(param.value)"
                 >
                   {{ param.label }}
@@ -116,11 +118,11 @@
                 min="1"
                 :max="MAX_TIME"
                 step="1"
-                v-model="formData.estimatedTime"
+                v-model="formData.estimation.time.months"
                 class="task-request__slider"
               />
               <div class="task-request__slider-value">
-                {{ formData.estimatedTime }} мес.
+                {{ formData.estimation.time.months }} мес.
               </div>
             </div>
 
@@ -131,11 +133,11 @@
                 min="50000"
                 :max="MAX_BUDGET"
                 step="50000"
-                v-model="formData.estimatedBudget"
+                v-model="formData.estimation.budget.amount"
                 class="task-request__slider"
               />
               <div class="task-request__slider-value">
-                {{ Number(formData.estimatedBudget).toLocaleString() }} ₽
+                {{ formData.estimation.budget.amount.toLocaleString() }} ₽
               </div>
             </div>
           </div>
@@ -149,7 +151,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="contact-name"
-                v-model="formData.contactName"
+                v-model="formData.contact.name"
                 label="Как к вам обращаться"
                 type="text"
                 required
@@ -160,7 +162,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="email"
-                v-model="formData.email"
+                v-model="formData.contact.email"
                 label="Email"
                 type="email"
                 required
@@ -171,7 +173,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="phone"
-                v-model="formData.phone"
+                v-model="formData.contact.phone"
                 label="Телефон"
                 type="tel"
                 required
@@ -198,14 +200,82 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useTaskRequestStore } from '@/stores/taskRequestStore'
+import { useTaskRequestStore, RequestStatus, type FormTaskRequest } from '@/stores/taskRequestStore'
 import { useRouter } from 'vue-router'
 import CustomInput from '@/components/CustomInput.vue'
 
+interface FormData extends Omit<FormTaskRequest, 'id' | 'status' | 'preview'> {
+  project: {
+    name: string;
+    description: string;
+    type: string;
+  };
+  features: {
+    core: string[];
+    custom: string | null;
+  };
+  requirements: {
+    design: boolean;
+    externalIntegration: boolean;
+    support: boolean;
+    paymentIntegration: boolean;
+    adminPanel: boolean;
+  };
+  estimation: {
+    time: {
+      months: number;
+      recommended: number;
+    };
+    budget: {
+      amount: number;
+      recommended: number;
+    };
+  };
+  contact: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+}
+
 const router = useRouter()
 const store = useTaskRequestStore()
+
+const formData = ref<FormData>({
+  project: {
+    name: '',
+    description: '',
+    type: ''
+  },
+  features: {
+    core: [],
+    custom: null
+  },
+  requirements: {
+    design: false,
+    externalIntegration: false,
+    support: false,
+    paymentIntegration: false,
+    adminPanel: false
+  },
+  estimation: {
+    time: {
+      months: 1,
+      recommended: 1
+    },
+    budget: {
+      amount: 50000,
+      recommended: 50000
+    }
+  },
+  contact: {
+    name: '',
+    email: '',
+    phone: ''
+  }
+})
 
 const applicationTypes = [
   {
@@ -257,28 +327,6 @@ const extraParamsOptions = [
   { value: 'hasAdminPanel', label: 'Нужна административная панель', weight: 1.0 }
 ]
 
-const formData = ref({
-  projectName: '',
-  description: '',
-  applicationType: '',
-  estimatedTime: '',
-  estimatedBudget: '',
-  estimatedPrice: '',
-  contactName: '',
-  email: '',
-  phone: '',
-  featuresList: [],
-  featuresOther: '',
-  extraParams: [],
-  usersCount: '',
-  needDesign: false,
-  needIntegration: false,
-  needSupport: false,
-  hasAdminPanel: false,
-  needPaymentIntegration: false,
-  needAnalytics: false
-})
-
 const loading = computed(() => store.isLoading)
 const error = computed(() => store.getError)
 
@@ -297,32 +345,34 @@ let updating = false
 const recommendedTime = computed(() => baseTime.value)
 const recommendedBudget = computed(() => baseBudget.value)
 
-watch(() => formData.value.estimatedTime, (newTime) => {
+watch(() => formData.value.estimation.time.months, (newTime) => {
   if (updating) return
   updating = true
   const t = Math.max(MIN_TIME, Math.min(Number(newTime), MAX_TIME))
   let newBudget = MONTH_COST_MULTIPLIER * baseBudget.value * Math.pow(baseTime.value / t, 1 / K_SMOOTH)
   newBudget = Math.max(MIN_BUDGET, Math.min(Math.round(newBudget), MAX_BUDGET))
-  formData.value.estimatedBudget = String(newBudget)
+  formData.value.estimation.budget.amount = newBudget
   updating = false
 })
 
-watch(() => formData.value.estimatedBudget, (newBudget) => {
+watch(() => formData.value.estimation.budget.amount, (newBudget) => {
   if (updating) return
   updating = true
   const b = Math.max(MIN_BUDGET, Math.min(Number(newBudget), MAX_BUDGET))
   let newTime = b === 0 ? MAX_TIME : baseTime.value * Math.pow(MONTH_COST_MULTIPLIER * baseBudget.value / b, K_SMOOTH)
   newTime = Math.max(MIN_TIME, Math.min(Math.round(newTime), MAX_TIME))
-  formData.value.estimatedTime = String(newTime)
+  formData.value.estimation.time.months = newTime
   updating = false
 })
 
 function recalculateEstimatedTime() {
   let base = 0
   let basePrice = 0
-  const type = formData.value.applicationType
-  const featuresList = formData.value.featuresList
-  const extraParams = formData.value.extraParams
+  const type = formData.value.project.type
+  const featuresList = formData.value.features.core
+  const extraParams = Object.entries(formData.value.requirements)
+    .filter(([_, value]) => value)
+    .map(([key]) => key)
 
   // Базовые значения для сроков и цены
   if (type === 'web') { base = 2; basePrice = 100000 }
@@ -359,52 +409,24 @@ function recalculateEstimatedTime() {
   let result = Math.round(base * multiplier)
   if (result < 1) result = 1
   baseTime.value = result
-  formData.value.estimatedTime = String(result)
+  formData.value.estimation.time.months = result
 
   // Итоговая цена
   let price = Math.round(basePrice * priceMultiplier)
   baseBudget.value = price
-  formData.value.estimatedBudget = String(price)
-  formData.value.estimatedPrice = price
+  formData.value.estimation.budget.amount = price
+  formData.value.estimation.budget.recommended = price
 }
 
 const submitRequest = async () => {
   try {
-    // Формируем структурированный объект для отправки
-    const requestData = {
-      project: {
-        name: formData.value.projectName,
-        description: formData.value.description,
-        type: formData.value.applicationType
-      },
-      features: {
-        core: formData.value.featuresList.filter(f => f !== 'other'),
-        custom: formData.value.featuresOther || null
-      },
-      requirements: {
-        design: formData.value.extraParams.includes('needDesign'),
-        externalIntegration: formData.value.extraParams.includes('needIntegration'),
-        support: formData.value.extraParams.includes('needSupport'),
-        paymentIntegration: formData.value.extraParams.includes('needPaymentIntegration'),
-        adminPanel: formData.value.extraParams.includes('hasAdminPanel')
-      },
-      estimation: {
-        time: {
-          months: parseInt(formData.value.estimatedTime),
-          recommended: recommendedTime.value
-        },
-        budget: {
-          amount: parseInt(formData.value.estimatedBudget),
-          recommended: recommendedBudget.value
-        }
-      },
-      contact: {
-        name: formData.value.contactName,
-        email: formData.value.email,
-        phone: formData.value.phone
-      }
+    const requestData: FormTaskRequest = {
+      id: Date.now(),
+      ...formData.value,
+      status: RequestStatus.NEW,
+      preview: formData.value.project.description.substring(0, 100) + '...'
     }
-
+    
     await store.createRequest(requestData)
     router.push('/requests')
   } catch (error) {
@@ -412,31 +434,25 @@ const submitRequest = async () => {
   }
 }
 
-function toggleFeature(value) {
-  const idx = formData.value.featuresList.indexOf(value)
+function toggleFeature(value: string) {
+  const idx = formData.value.features.core.indexOf(value)
   if (idx === -1) {
-    formData.value.featuresList.push(value)
+    formData.value.features.core.push(value)
   } else {
-    formData.value.featuresList.splice(idx, 1)
+    formData.value.features.core.splice(idx, 1)
   }
   recalculateEstimatedTime()
 }
 
-function toggleExtraParam(value) {
-  const idx = formData.value.extraParams.indexOf(value)
-  if (idx === -1) {
-    formData.value.extraParams.push(value)
-  } else {
-    formData.value.extraParams.splice(idx, 1)
-  }
+function toggleExtraParam(value: string) {
+  const paramKey = value as keyof typeof formData.value.requirements
+  formData.value.requirements[paramKey] = !formData.value.requirements[paramKey]
   recalculateEstimatedTime()
 }
 
 // watch для других важных параметров
 watch(
-  () => [
-    formData.value.applicationType,
-  ],
+  () => formData.value.project.type,
   recalculateEstimatedTime
 )
 </script>

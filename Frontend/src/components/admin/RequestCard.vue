@@ -67,18 +67,7 @@
 import { ref, computed } from 'vue'
 import { useTeamStore } from '@/stores/teamStore'
 import type { Team } from '@/stores/teamStore'
-
-enum RequestStatus {
-  NEW = 'new',
-  IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed'
-}
-
-const statusLabels = {
-  [RequestStatus.NEW]: 'Новая',
-  [RequestStatus.IN_PROGRESS]: 'В работе',
-  [RequestStatus.COMPLETED]: 'Выполнено'
-}
+import { RequestStatus, statusLabels } from '@/stores/taskRequestStore'
 
 interface Props {
   preview: string

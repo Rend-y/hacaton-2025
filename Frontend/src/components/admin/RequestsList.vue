@@ -25,13 +25,13 @@
           <RequestCard
             :id="item.id"
             :preview="item.preview"
-            :title="item.title"
-            :description="item.description"
+            :title="item.project.name"
+            :description="item.project.description"
             :status="item.status"
             :deadline="item.deadline"
             :assigned-team-id="item.assignedTeamId"
             :is-expanded="!!expandedRequestIds[item.id]"
-            :company-name="item.companyName"
+            :company-name="item.contact.name"
             @toggle="toggleRequest(item)"
             @assignTeam="handleAssignTeam(item)"
             @statusChange="handleStatusChange"
@@ -55,7 +55,7 @@ import RequestCard from './RequestCard.vue'
 import AssignTeamModal from './AssignTeamModal.vue'
 import VirtualScroll from '../common/VirtualScroll.vue'
 import { useTaskRequestStore } from '@/stores/taskRequestStore'
-import type { TaskRequest } from '@/stores/taskRequestStore'
+import type { FormTaskRequest } from '@/stores/taskRequestStore'
 import { RequestStatus } from '@/stores/taskRequestStore'
 import type { Team } from '@/stores/teamStore'
 import { useTeamStore } from '@/stores/teamStore'
@@ -69,7 +69,7 @@ const selectedRequestId = ref<number | undefined>(undefined)
 const expandedRequestIds = reactive<Record<number, boolean>>({})
 const teamStore = useTeamStore()
 
-const handleAssignTeam = (request: TaskRequest) => {
+const handleAssignTeam = (request: FormTaskRequest) => {
   selectedRequestId.value = request.id
   isAssignModalOpen.value = true
 }
@@ -117,7 +117,7 @@ const handleTeamAssigned = async ({ teamId, team }: { teamId: string, team: Team
   }
 }
 
-const toggleRequest = (request: TaskRequest) => {
+const toggleRequest = (request: FormTaskRequest) => {
   if (expandedRequestIds[request.id]) {
     expandedRequestIds[request.id] = false
   } else {
@@ -155,8 +155,8 @@ const sortedRequests = computed(() => {
     })
   } else {
     return requests.sort((a, b) => {
-      const dateA = new Date(a.deadline).getTime()
-      const dateB = new Date(b.deadline).getTime()
+      const dateA = a.deadline ? new Date(a.deadline).getTime() : Date.now()
+      const dateB = b.deadline ? new Date(b.deadline).getTime() : Date.now()
       return dateA - dateB
     })
   }
@@ -164,27 +164,38 @@ const sortedRequests = computed(() => {
 
 // Функция для загрузки элементов
 const loadMoreItems = async () => {
-  console.log('loadMoreItems')
+  console.log('loadMoreItems called, current loading state:', loading.value)
   if (loading.value) return
   
   loading.value = true
+  console.log('Loading more items...')
 
-  const newRequests = await taskRequestStore.fetchRequests()
-  
-  // Имитация задержки загрузки
-  await new Promise(resolve => setTimeout(resolve, 500))
-
-  console.log(taskRequestStore.requests.length)
-  
-  loading.value = false
+  try {
+    const newRequests = await taskRequestStore.fetchRequests()
+    console.log('Received new requests:', newRequests)
+    console.log('Current store requests:', taskRequestStore.requests)
+  } catch (error) {
+    console.error('Error loading requests:', error)
+  } finally {
+    loading.value = false
+  }
 }
 
 // Инициализация
 onMounted(async () => {
-  await Promise.all([
-    loadMoreItems(),
-    teamStore.fetchTeams()
-  ])
+  console.log('Component mounted')
+  try {
+    // Очищаем старые запросы перед загрузкой новых
+    taskRequestStore.clearRequests()
+    await Promise.all([
+      loadMoreItems(),
+      teamStore.fetchTeams()
+    ])
+    console.log('Initial load complete')
+    console.log('Requests after load:', taskRequestStore.requests)
+  } catch (error) {
+    console.error('Error during initial load:', error)
+  }
 })
 </script>
 
