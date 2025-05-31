@@ -148,6 +148,17 @@
           <div class="task-request__section-content">
             <div class="task-request__field">
               <CustomInput
+                id="contact-name"
+                v-model="formData.contactName"
+                label="Как к вам обращаться"
+                type="text"
+                required
+                placeholder="Введите ваше имя"
+              />
+            </div>
+
+            <div class="task-request__field">
+              <CustomInput
                 id="email"
                 v-model="formData.email"
                 label="Email"
@@ -219,11 +230,11 @@ const applicationTypes = [
     baseMonth: 4
   },
   {
-    value: 'other',
-    label: 'Другое',
-    description: 'Иной тип приложения или сервиса',
+    value: 'cross-platform',
+    label: 'Кросс-платформа',
+    description: 'Приложение для всех платформ',
     basePrice: 200000,
-    baseMonth: 2
+    baseMonth: 4
   }
 ]
 
@@ -240,9 +251,7 @@ const featuresOptions = [
 
 const extraParamsOptions = [
   { value: 'needDesign', label: 'Нужен дизайн', weight: 1.5 },
-  { value: 'hasSpec', label: 'Есть техническое задание', weight: -1.0 },
   { value: 'needIntegration', label: 'Интеграция с внешними сервисами', weight: 2.0 },
-  { value: 'needMobileVersion', label: 'Мобильная версия', weight: 2.0 },
   { value: 'needSupport', label: 'Поддержка после релиза', weight: 1.0 },
   { value: 'needPaymentIntegration', label: 'Интеграция с платёжными системами', weight: 1.5 },
   { value: 'hasAdminPanel', label: 'Нужна административная панель', weight: 1.0 }
@@ -255,6 +264,7 @@ const formData = ref({
   estimatedTime: '',
   estimatedBudget: '',
   estimatedPrice: '',
+  contactName: '',
   email: '',
   phone: '',
   featuresList: [],
@@ -263,10 +273,8 @@ const formData = ref({
   usersCount: '',
   needDesign: false,
   needIntegration: false,
-  hasSpec: false,
   needSupport: false,
   hasAdminPanel: false,
-  needMobileVersion: false,
   needPaymentIntegration: false,
   needAnalytics: false
 })
@@ -320,7 +328,7 @@ function recalculateEstimatedTime() {
   if (type === 'web') { base = 2; basePrice = 100000 }
   else if (type === 'mobile') { base = 3; basePrice = 150000 }
   else if (type === 'desktop') { base = 4; basePrice = 200000 }
-  else if (type === 'other') { base = 2; basePrice = 100000 }
+  else if (type === 'cross-platform') { base = 4; basePrice = 200000 }
   else { base = 0; basePrice = 0 }
 
   // Учитываем количество функций
@@ -362,11 +370,44 @@ function recalculateEstimatedTime() {
 
 const submitRequest = async () => {
   try {
-    await store.createRequest(formData.value)
-    // После успешного создания заявки перенаправляем на страницу со списком заявок
+    // Формируем структурированный объект для отправки
+    const requestData = {
+      project: {
+        name: formData.value.projectName,
+        description: formData.value.description,
+        type: formData.value.applicationType
+      },
+      features: {
+        core: formData.value.featuresList.filter(f => f !== 'other'),
+        custom: formData.value.featuresOther || null
+      },
+      requirements: {
+        design: formData.value.extraParams.includes('needDesign'),
+        externalIntegration: formData.value.extraParams.includes('needIntegration'),
+        support: formData.value.extraParams.includes('needSupport'),
+        paymentIntegration: formData.value.extraParams.includes('needPaymentIntegration'),
+        adminPanel: formData.value.extraParams.includes('hasAdminPanel')
+      },
+      estimation: {
+        time: {
+          months: parseInt(formData.value.estimatedTime),
+          recommended: recommendedTime.value
+        },
+        budget: {
+          amount: parseInt(formData.value.estimatedBudget),
+          recommended: recommendedBudget.value
+        }
+      },
+      contact: {
+        name: formData.value.contactName,
+        email: formData.value.email,
+        phone: formData.value.phone
+      }
+    }
+
+    await store.createRequest(requestData)
     router.push('/requests')
   } catch (error) {
-    // Ошибка уже обработана в store
     console.error('Error submitting request:', error)
   }
 }
@@ -406,7 +447,7 @@ watch(
   border-radius: 24px;
   box-shadow: 0 4px 32px 0 rgba(136,95,255,0.08);
   padding: 2.5rem 2rem;
-  max-width: 540px;
+  max-width: 1000px;
   margin: 2.5rem auto;
 }
 
@@ -516,6 +557,7 @@ watch(
   position: relative;
   flex: 1 1 180px;
   min-width: 160px;
+  display: flex;
 }
 
 .task-request__radio-input {
@@ -525,7 +567,9 @@ watch(
 }
 
 .task-request__radio-label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   background: #fff;
   border: 2px solid #ede6fa;
   border-radius: 14px;
@@ -554,6 +598,10 @@ watch(
 .task-request__radio-description {
   font-size: 0.93rem;
   color: #7b6fa9;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .task-request__submit-wrapper {
@@ -596,10 +644,10 @@ watch(
   border: 1.5px solid #ffd6d6;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1040px) {
   .task-request {
     margin: 1rem;
-    padding: 1rem;
+    padding: 1.5rem;
   }
   .task-request__radio-group {
     flex-direction: column;
