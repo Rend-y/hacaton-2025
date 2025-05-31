@@ -110,6 +110,7 @@ watch(() => [props.rows, props.maxRows], ([rows, maxRows]) => {
   display: flex;
   flex-direction: column;
   gap: 0.5rem;
+  width: 100%;
 }
 
 .custom-input__label {
