@@ -40,9 +40,6 @@ const loadMoreItems = async () => {
   // Имитация задержки загрузки
   await new Promise(resolve => setTimeout(resolve, 500))
 
-  // Загружаем все оставшиеся элементы
-  taskRequestStore.requests = [...taskRequestStore.requests, ...newRequests]
-  
   console.log(taskRequestStore.requests.length)
   
   loading.value = false
