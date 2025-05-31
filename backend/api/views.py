@@ -8,17 +8,11 @@ from .serializers import (
     UserSerializer,
     ProfileSerializer,
     ProjectSerializer,
-    RegisterSerializer,
     TaskRequestSerializer,
     TeamSerializer
 )
 
 # Create your views here.
-
-class RegisterView(generics.CreateAPIView):
-    queryset = User.objects.all()
-    permission_classes = (permissions.AllowAny,)
-    serializer_class = RegisterSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
