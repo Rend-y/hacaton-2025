@@ -41,7 +41,9 @@
 </template>
 
 <script setup>
-defineProps({
+import { computed, onMounted, watch, ref } from 'vue'
+
+const props = defineProps({
   id: {
     type: String,
     required: true
@@ -84,7 +86,23 @@ defineProps({
   }
 })
 
-defineEmits(['update:modelValue'])
+const emit = defineEmits(['update:modelValue'])
+
+const textareaRef = ref(null)
+
+onMounted(() => {
+  if (textareaRef.value) {
+    textareaRef.value.style.setProperty('--rows', props.rows)
+    textareaRef.value.style.setProperty('--maxRows', props.maxRows)
+  }
+})
+
+watch(() => [props.rows, props.maxRows], ([rows, maxRows]) => {
+  if (textareaRef.value) {
+    textareaRef.value.style.setProperty('--rows', rows)
+    textareaRef.value.style.setProperty('--maxRows', maxRows)
+  }
+})
 </script>
 
 <style scoped>
@@ -120,9 +138,14 @@ defineEmits(['update:modelValue'])
 }
 
 .custom-input__textarea {
-  min-height: 48px;
-  height: 48px;
-  resize: vertical;
+  min-height: unset;
+  height: auto;
+  line-height: 1.5;
+  resize: none;
+  /* Высота по rows, максимум по maxRows */
+  height: calc(var(--rows, 4) * 1.5em);
+  max-height: calc(var(--maxRows, 6) * 1.5em);
+  overflow-y: auto;
 }
 
 .custom-input__input:focus,

@@ -54,6 +54,7 @@
                 label="Описание проекта"
                 type="textarea"
                 required
+                :rows="6"
                 placeholder="Опишите ваш проект"
               />
             </div>
