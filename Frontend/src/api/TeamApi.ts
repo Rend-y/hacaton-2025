@@ -9,8 +9,16 @@ export interface ITeamData {
   description: string
 }
 
-export async function createTeam(token: string, teamData: Omit<ITeamData, 'id'>): Promise<any> {
+export async function createTeam(token: string, teamData: Omit<ITeamData, 'id' | 'status'>): Promise<any> {
   return axios.post('/api/teams', teamData, {
+    headers: {
+      'Authorization': `Bearer ${token}`,
+    },
+  });
+}
+
+export async function updateTeam(token: string, teamId: number, teamData: Omit<ITeamData, 'status' | 'id'>) {
+     return axios.put(`/api/teams/${teamId}`, teamData, {
     headers: {
       'Authorization': `Bearer ${token}`,
     },

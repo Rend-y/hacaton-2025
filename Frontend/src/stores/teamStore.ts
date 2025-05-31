@@ -1,4 +1,4 @@
-import { getTeamData, type ITeamData } from '@/api/TeamApi'
+import { getTeamData, type ITeamData, createTeam as createTeamApi, updateTeam as updateTeamApi } from '@/api/TeamApi'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -20,7 +20,7 @@ export interface Team {
 const formatApiTypeToStore = (apiData: ITeamData): Team => ({
   id: apiData.id,
   name: apiData.name,
-  projectType: 'Frontend',
+  projectType: apiData.description,
   status: apiData.status,
   members: apiData.members.map((item, index) => ({
     id: index.toString(),
@@ -28,6 +28,18 @@ const formatApiTypeToStore = (apiData: ITeamData): Team => ({
     role: item.position
   })),
   techStack: apiData.techStack
+})
+
+const fromStoreTypeToApi = (storeType: Team): ITeamData => ({
+  id: storeType.id,
+  name: storeType.name,
+  description: storeType.projectType,
+  status: storeType.status,
+  members: storeType.members.map((item) => ({
+    name: item.name,
+    position: item.role
+  })),
+  techStack: storeType.techStack
 })
 
 export const useTeamStore = defineStore('team', () => {
@@ -41,29 +53,37 @@ export const useTeamStore = defineStore('team', () => {
     teams.value.push(...mapType)
   }
 
-  const createTeam = (teamData: Partial<Team>) => {
-    const newTeam: Team = {
-      id: teams.value.length + 1,
-      name: teamData.name || '',
-      projectType: teamData.projectType || '',
-      status: 'available',
-      members: teamData.members || [],
-      techStack: teamData.techStack || []
-    }
-    teams.value.push(newTeam)
+  const createTeam = async (teamData: Omit<Team, 'id' | 'status'>) => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+    await createTeamApi(token, {
+      name: teamData.name,
+      description: teamData.projectType,
+      members: teamData.members.map((item) => ({
+        name: item.name,
+        position: item.role
+      })),
+      techStack: teamData.techStack
+    })
+    clearTeams()
+    fetchTeams()
   }
 
-  const updateTeam = (teamData: Partial<Team> & { id: number }) => {
-    const idx = teams.value.findIndex(t => t.id === teamData.id)
-    if (idx !== -1) {
-      teams.value[idx] = {
-        ...teams.value[idx],
-        ...teamData,
-        id: teams.value[idx].id, // id не меняем
-        status: teams.value[idx].status // статус не меняем
-      }
-    }
+  const updateTeam = async (teamData: Team) => {
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+    await updateTeamApi(token, teamData.id, {
+      name: teamData.name,
+      description: teamData.projectType,
+      members: teamData.members.map((item) => ({
+        name: item.name,
+        position: item.role
+      })),
+      techStack: teamData.techStack
+    })
+    clearTeams()
+    fetchTeams()
   }
+  
+  const clearTeams = () => (teams.value = [])
 
   return {
     teams,
