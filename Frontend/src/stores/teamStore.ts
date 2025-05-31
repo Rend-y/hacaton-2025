@@ -1,3 +1,4 @@
+import { getTeamData, type ITeamData } from '@/api/TeamApi'
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -8,7 +9,7 @@ export interface TeamMember {
 }
 
 export interface Team {
-  id: string
+  id: number
   name: string
   projectType: string
   status: 'available' | 'in_project' | 'on_break'
@@ -16,58 +17,58 @@ export interface Team {
   techStack: string[]
 }
 
+const formatApiTypeToStore = (apiData: ITeamData): Team => ({
+  id: apiData.id,
+  name: apiData.name,
+  projectType: 'Frontend',
+  status: apiData.status,
+  members: apiData.members.map((item, index) => ({
+    id: index.toString(),
+    name: item.name,
+    role: item.position
+  })),
+  techStack: apiData.techStack
+})
+
 export const useTeamStore = defineStore('team', () => {
   const teams = ref<Team[]>([])
 
-  // Temporary mock data for demonstration
-  const mockTeams: Team[] = [
-    {
-      id: '1',
-      name: 'Команда Alpha',
-      projectType: 'Веб-приложение',
-      status: 'available',
-      members: [
-        { id: '1', name: 'Иван Петров', role: 'Frontend Developer' },
-        { id: '2', name: 'Мария Сидорова', role: 'Backend Developer' },
-        { id: '3', name: 'Алексей Иванов', role: 'UI/UX Designer' }
-      ],
-      techStack: ['React', 'Node.js', 'PostgreSQL', 'Figma']
-    },
-    {
-      id: '2',
-      name: 'Команда Beta',
-      projectType: 'Мобильное приложение',
-      status: 'in_project',
-      members: [
-        { id: '4', name: 'Анна Козлова', role: 'Mobile Developer' },
-        { id: '5', name: 'Дмитрий Волков', role: 'Backend Developer' },
-        { id: '6', name: 'Елена Морозова', role: 'QA Engineer' }
-      ],
-      techStack: ['Flutter', 'Firebase', 'Swift', 'Kotlin']
-    },
-    {
-      id: '3',
-      name: 'Команда Gamma',
-      projectType: 'Десктопное приложение',
-      status: 'on_break',
-      members: [
-        { id: '7', name: 'Павел Соколов', role: 'C++ Developer' },
-        { id: '8', name: 'Ольга Новикова', role: 'System Architect' },
-        { id: '9', name: 'Сергей Попов', role: 'QA Engineer' }
-      ],
-      techStack: ['C++', 'Qt', 'SQLite', 'CMake']
-    }
-  ]
-
   const fetchTeams = async () => {
-    // In a real application, this would be an API call
-    // For now, we'll just use mock data
-    await new Promise(resolve => setTimeout(resolve, 1000)) // Simulate API delay
-    teams.value = mockTeams
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+    const lastId = teams.value[teams.value.length - 1]?.id || 0
+    const req = await getTeamData(0, 10, lastId, token)
+    const mapType = req.map(item => formatApiTypeToStore(item))
+    teams.value.push(...mapType)
+  }
+
+  const createTeam = (teamData: Partial<Team>) => {
+    const newTeam: Team = {
+      id: teams.value.length + 1,
+      name: teamData.name || '',
+      projectType: teamData.projectType || '',
+      status: 'available',
+      members: teamData.members || [],
+      techStack: teamData.techStack || []
+    }
+    teams.value.push(newTeam)
+  }
+
+  const updateTeam = (teamData: Partial<Team> & { id: number }) => {
+    const idx = teams.value.findIndex(t => t.id === teamData.id)
+    if (idx !== -1) {
+      teams.value[idx] = {
+        ...teams.value[idx],
+        ...teamData,
+        id: teams.value[idx].id, // id не меняем
+        status: teams.value[idx].status // статус не меняем
+      }
+    }
   }
 
   return {
     teams,
-    fetchTeams
+    fetchTeams,
+    createTeam,
+    updateTeam
   }
 }) 

@@ -16,7 +16,7 @@
     
     <div class="requests-container">
       <VirtualScroll
-        :items="sortedRequests"
+        :items="taskRequestStore.getRequests"
         :loading="loading"
         ref="virtualScroll"
         @loadMore="loadMoreItems"
@@ -50,7 +50,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, computed, onMounted, reactive } from 'vue'
+import { ref, computed, onMounted, reactive, watch } from 'vue'
 import RequestCard from './RequestCard.vue'
 import AssignTeamModal from './AssignTeamModal.vue'
 import VirtualScroll from '../common/VirtualScroll.vue'
@@ -84,26 +84,9 @@ const handleTeamAssigned = async ({ teamId, team }: { teamId: string, team: Team
     const request = taskRequestStore.requests.find(r => r.id === selectedRequestId.value)
     if (request) {
       try {
-        // Создаем обновленную версию заявки
-        const updatedRequest = {
-          ...request,
-          status: RequestStatus.IN_PROGRESS,
-          assignedTeamId: teamId
-        }
-        
         // Обновляем заявку в store
-        await taskRequestStore.updateRequest(request.id, updatedRequest)
-        
-        // Принудительно обновляем состояние в store
-        const index = taskRequestStore.requests.findIndex(r => r.id === request.id)
-        if (index !== -1) {
-          taskRequestStore.requests[index] = {
-            ...taskRequestStore.requests[index],
-            status: RequestStatus.IN_PROGRESS,
-            assignedTeamId: teamId
-          }
-        }
-        
+        await taskRequestStore.assignTeam(request.id, +teamId)
+      
         // Сворачиваем заявку
         expandedRequestIds[request.id] = false
         
@@ -141,39 +124,14 @@ const handleStatusChange = async ({ id, status }: { id: number, status: RequestS
   }
 }
 
-const sortedRequests = computed(() => {
-  const requests = [...taskRequestStore.requests]
-  
-  if (sortBy.value === 'status') {
-    return requests.sort((a, b) => {
-      const statusOrder: Record<RequestStatus, number> = {
-        [RequestStatus.NEW]: 0,
-        [RequestStatus.IN_PROGRESS]: 1,
-        [RequestStatus.COMPLETED]: 2
-      }
-      return statusOrder[a.status] - statusOrder[b.status]
-    })
-  } else {
-    return requests.sort((a, b) => {
-      const dateA = a.deadline ? new Date(a.deadline).getTime() : Date.now()
-      const dateB = b.deadline ? new Date(b.deadline).getTime() : Date.now()
-      return dateA - dateB
-    })
-  }
-})
-
 // Функция для загрузки элементов
 const loadMoreItems = async () => {
-  console.log('loadMoreItems called, current loading state:', loading.value)
   if (loading.value) return
   
   loading.value = true
-  console.log('Loading more items...')
-
   try {
-    const newRequests = await taskRequestStore.fetchRequests()
-    console.log('Received new requests:', newRequests)
-    console.log('Current store requests:', taskRequestStore.requests)
+    await taskRequestStore.fetchRequests(sortBy.value)
+    
   } catch (error) {
     console.error('Error loading requests:', error)
   } finally {
@@ -181,21 +139,15 @@ const loadMoreItems = async () => {
   }
 }
 
+watch(sortBy, async () => {
+  taskRequestStore.clearRequests();
+  await taskRequestStore.fetchRequests(sortBy.value)
+})
+
 // Инициализация
 onMounted(async () => {
-  console.log('Component mounted')
-  try {
-    // Очищаем старые запросы перед загрузкой новых
-    taskRequestStore.clearRequests()
-    await Promise.all([
-      loadMoreItems(),
-      teamStore.fetchTeams()
-    ])
-    console.log('Initial load complete')
-    console.log('Requests after load:', taskRequestStore.requests)
-  } catch (error) {
-    console.error('Error during initial load:', error)
-  }
+  if (taskRequestStore.getRequests.length > 0) return
+  loadMoreItems()
 })
 </script>
 

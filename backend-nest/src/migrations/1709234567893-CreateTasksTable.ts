@@ -8,7 +8,7 @@ export class CreateTasksTable1709234567893 implements MigrationInterface {
                 name VARCHAR NOT NULL,
                 description TEXT,
                 content JSON,
-                status VARCHAR DEFAULT 'pending',
+                status VARCHAR DEFAULT 'new',
                 deadline DATETIME,
                 createdAt DATETIME DEFAULT CURRENT_TIMESTAMP,
                 updatedAt DATETIME DEFAULT CURRENT_TIMESTAMP

@@ -1,7 +1,9 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
-import { Task } from './entities/task.entity';
+import { Task, TaskStatus } from './entities/task.entity';
+import { TeamsService } from '../teams/teams.service';
+import { TeamStatus } from 'src/teams/entities/team.entity';
 
 @Injectable()
 export class TasksService {
@@ -10,6 +12,7 @@ export class TasksService {
   constructor(
     @InjectRepository(Task)
     private tasksRepository: Repository<Task>,
+    private teamsService: TeamsService,
   ) {}
 
   async create(task: Partial<Task>): Promise<Task> {
@@ -20,21 +23,33 @@ export class TasksService {
     return savedTask;
   }
 
-  async findAll(): Promise<Task[]> {
-    this.logger.log('Finding all tasks');
-    const tasks = await this.tasksRepository.find();
-    this.logger.log(`Found ${tasks.length} tasks`);
+  async findAll(params: {
+    page: number;
+    limit: number;
+    skip: number;
+    sort: 'deadline' | 'status';
+  }) {
+    const { page, limit, skip, sort } = params;
+    const tasks = await this.tasksRepository.find({
+      relations: ['assignedTeam'],
+      order: { [sort]: 'DESC' },
+      skip: skip || (page - 1) * limit,
+      take: limit,
+    });
     return tasks;
   }
 
   async findOne(id: number): Promise<Task> {
     this.logger.log(`Finding task with id: ${id}`);
-    const task = await this.tasksRepository.findOne({ where: { id } });
+    const task = await this.tasksRepository.findOne({
+      where: { id },
+      relations: ['assignedTeam'],
+    });
     if (!task) {
       this.logger.warn(`Task with id ${id} not found`);
-    } else {
-      this.logger.log(`Task with id ${id} found`);
+      throw new NotFoundException(`Task with id ${id} not found`);
     }
+    this.logger.log(`Task with id ${id} found`);
     return task;
   }
 
@@ -50,5 +65,26 @@ export class TasksService {
     this.logger.log(`Removing task with id: ${id}`);
     await this.tasksRepository.delete(id);
     this.logger.log(`Task with id ${id} removed successfully`);
+  }
+
+  async assignTeam(taskId: number, teamId: number): Promise<Task> {
+    this.logger.log(`Assigning team ${teamId} to task ${taskId}`);
+
+    const task = await this.findOne(taskId);
+    const team = await this.teamsService.findOne(teamId);
+
+    if (!team) {
+      throw new NotFoundException(`Team with id ${teamId} not found`);
+    }
+
+    task.assignedTeam = team;
+    task.teamId = teamId;
+    task.status = TaskStatus.IN_PROGRESS;
+
+    const updatedTask = await this.tasksRepository.save(task);
+    await this.teamsService.changeStatus(teamId, TeamStatus.IN_PROJECT);
+    this.logger.log(`Team ${teamId} successfully assigned to task ${taskId}`);
+
+    return updatedTask;
   }
 }

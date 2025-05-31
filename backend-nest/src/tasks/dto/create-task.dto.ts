@@ -37,10 +37,10 @@ export class CreateTaskDto {
   content?: Record<string, any>;
 
   @ApiProperty({
-    example: TaskStatus.PENDING,
+    example: TaskStatus.NEW,
     description: 'Статус задачи',
     enum: TaskStatus,
-    default: TaskStatus.PENDING,
+    default: TaskStatus.NEW,
     required: false,
   })
   @IsOptional()

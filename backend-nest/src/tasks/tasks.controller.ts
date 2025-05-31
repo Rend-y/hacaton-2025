@@ -7,6 +7,7 @@ import {
   Delete,
   Put,
   UseGuards,
+  Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
 import { Task } from './entities/task.entity';
@@ -41,8 +42,13 @@ export class TasksController {
   @Get()
   @ApiOperation({ summary: 'Get all tasks' })
   @ApiResponse({ status: 200, description: 'Return all tasks', type: [Task] })
-  findAll() {
-    return this.tasksService.findAll();
+  findAll(
+    @Query('page') page: number = 1,
+    @Query('limit') limit: number = 10,
+    @Query('skip') skip: number = 0,
+    @Query('sort') sort: 'deadline' | 'status' = 'deadline',
+  ) {
+    return this.tasksService.findAll({ page, limit, skip, sort });
   }
 
   @ApiBearerAuth()
@@ -74,5 +80,18 @@ export class TasksController {
   @ApiResponse({ status: 200, description: 'Task successfully deleted' })
   remove(@Param('id') id: string) {
     return this.tasksService.remove(+id);
+  }
+
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/assign-team')
+  @ApiOperation({ summary: 'Assign team to task' })
+  @ApiResponse({
+    status: 200,
+    description: 'Team successfully assigned to task',
+    type: Task,
+  })
+  assignTeam(@Param('id') id: string, @Body('teamId') teamId: number) {
+    return this.tasksService.assignTeam(+id, teamId);
   }
 }
