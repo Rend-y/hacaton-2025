@@ -1,9 +1,12 @@
+import { getToken } from '@/api/token/TokenApi'
 import { defineStore } from 'pinia'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     username: '',
     email: '',
+    accessToken: '',
+    refreshToken: '',
   }),
   actions: {
     setUsername(username: string) {
@@ -12,8 +15,10 @@ export const useUserStore = defineStore('user', {
     setEmail(email: string) {
       this.email = email
     },
-    login(email: string, password: string) {
-      console.log(email, password)
+    async login(email: string, password: string) {
+      const token = await getToken(email, password)
+      this.accessToken = token.access
+      this.refreshToken = token.refresh
     },
       logout() {
         console.log('logout')
