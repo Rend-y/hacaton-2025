@@ -1,6 +1,7 @@
-import { deleteMockTask, fetchMockTaskById, fetchMockTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
+import { createTask, deleteMockTask, fetchMockTaskById, fetchTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
 import type { TaskRequest as ApiTaskRequest } from '@/api/tasks/mockData'
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 export interface FormTaskRequest {
   id: number;
@@ -132,18 +133,18 @@ export const useTaskRequestStore = defineStore('taskRequest', {
   },
 
   actions: {
-    async createRequest(requestData: any): Promise<TaskRequest> {
+    async createRequest(requestData: FormTaskRequest): Promise<FormTaskRequest> {
       console.log('requestData', requestData)
         console.log(requestData.project.name, requestData.project.description, requestData.estimation.time, requestData.content)
         const newTask = await createTask(
           requestData.project.name,
           requestData.project.description,
           requestData.estimation.time.months,
-          requestData.content
+          requestData
         );
-        this.requests.push({...newTask, companyName: requestData.project.name, status: RequestStatus.NEW})
-        this.currentRequest = {...newTask, companyName: requestData.project.name, status: RequestStatus.NEW}
-        return {...newTask, companyName: requestData.project.name, status: RequestStatus.NEW}
+        this.requests.push(convertApiToFormRequest(newTask))
+        this.currentRequest = convertApiToFormRequest(newTask)
+        return convertApiToFormRequest(newTask)
     },
 
     async fetchRequests(): Promise<FormTaskRequest[]> {
@@ -151,12 +152,9 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       this.error = null
       
       try {
-        const requests = await fetchTasks('')
-        const convertedRequests = requests.map(request => ({
-          ...request,
-          status: request.status as RequestStatus,
-          deadline: new Date(Date.now() + Math.floor(Math.random() * 14 + 1) * 24 * 60 * 60 * 1000).toISOString() // Random deadline between 1-14 days
-        }))
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]
+        const requests = await fetchTasks(token as string)
+        const convertedRequests = requests.map(task => convertApiToFormRequest(task))
         this.requests.push(...convertedRequests)
         return convertedRequests
       } catch (error: any) {
