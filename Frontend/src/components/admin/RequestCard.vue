@@ -229,20 +229,6 @@ const handleStatusChange = (event: Event) => {
   color: #388e3c;
 }
 
-.status::after {
-  content: '';
-  position: absolute;
-  right: 8px;
-  top: 50%;
-  transform: translateY(-50%);
-  width: 0;
-  height: 0;
-  border-left: 4px solid transparent;
-  border-right: 4px solid transparent;
-  border-top: 4px solid currentColor;
-  pointer-events: none;
-}
-
 .expand-button {
   background: none;
   border: none;
