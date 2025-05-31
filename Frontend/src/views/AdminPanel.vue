@@ -65,7 +65,6 @@ const menuItems = [
 ]
 
 const activeTab = ref<'requests' | 'teams' | 'projects'>('requests')
-
 const isSidebarExpanded = ref(true)
 
 const toggleSidebar = () => {

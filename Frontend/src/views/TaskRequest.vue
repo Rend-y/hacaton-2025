@@ -58,7 +58,6 @@
                 placeholder="Опишите ваш проект"
               />
             </div>
-
             <!-- Ключевые функции -->
             <div class="task-request__field">
               <label class="task-request__label">Ключевые функции</label>
@@ -653,7 +652,6 @@ watch(
   border-color: #885fff;
   box-shadow: 0 0 0 2px #b16fff;
 }
-
 .task-request__checkbox-group {
   display: flex;
   flex-wrap: wrap;
