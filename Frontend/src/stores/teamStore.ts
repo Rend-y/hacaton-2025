@@ -44,13 +44,17 @@ const fromStoreTypeToApi = (storeType: Team): ITeamData => ({
 
 export const useTeamStore = defineStore('team', () => {
   const teams = ref<Team[]>([])
+  const blockLoad = ref<boolean>(false)
 
   const fetchTeams = async () => {
+    if (blockLoad.value) return
+    const maxLoad = 10;
     const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
     const lastId = teams.value[teams.value.length - 1]?.id || 0
-    const req = await getTeamData(0, 10, lastId, token)
+    const req = await getTeamData(0, maxLoad, lastId, token)
     const mapType = req.map(item => formatApiTypeToStore(item))
     teams.value.push(...mapType)
+    if (req.length < maxLoad - 1) blockLoad.value = true;
   }
 
   const createTeam = async (teamData: Omit<Team, 'id' | 'status'>) => {
@@ -83,12 +87,17 @@ export const useTeamStore = defineStore('team', () => {
     fetchTeams()
   }
   
-  const clearTeams = () => (teams.value = [])
+  const clearTeams = () => {
+    teams.value = []
+    blockLoad.value = false
+  }
 
   return {
     teams,
     fetchTeams,
     createTeam,
-    updateTeam
+    updateTeam,
+    clearTeams,
+    blockLoad
   }
 }) 

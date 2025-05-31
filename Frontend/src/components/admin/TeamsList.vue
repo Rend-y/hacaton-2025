@@ -144,6 +144,11 @@ onMounted(() => {
 <style scoped>
 .teams-container {
   padding: 1rem;
+  height: 100%;
+  min-height: 0;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .teams-header {
@@ -439,5 +444,11 @@ onMounted(() => {
   .team-members {
     grid-template-columns: 1fr;
   }
+}
+
+.virtual-scroll-container {
+  flex: 1 1 auto;
+  min-height: 0;
+  height: 100%;
 }
 </style> 
