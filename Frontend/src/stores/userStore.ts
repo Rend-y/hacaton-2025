@@ -1,9 +1,11 @@
+import { api } from '@/api'
 import { defineStore } from 'pinia'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     username: '',
     email: '',
+    accessToken: '',
   }),
   actions: {
     setUsername(username: string) {
@@ -12,8 +14,9 @@ export const useUserStore = defineStore('user', {
     setEmail(email: string) {
       this.email = email
     },
-    login(email: string, password: string) {
-      console.log(email, password)
+    async login(email: string, password: string) {
+      const token = await api.login(email, password)
+      this.accessToken = token;
     },
       logout() {
         console.log('logout')
