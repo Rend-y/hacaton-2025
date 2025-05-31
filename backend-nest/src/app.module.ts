@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { LoggerMiddleware } from './middleware/logger.middleware';
 import { join } from 'path';
 import { TasksModule } from './tasks/tasks.module';
+import { TeamsModule } from './teams/teams.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { TasksModule } from './tasks/tasks.module';
     UsersModule,
     AuthModule,
     TasksModule,
+    TeamsModule,
   ],
   controllers: [AppController],
   providers: [AppService],

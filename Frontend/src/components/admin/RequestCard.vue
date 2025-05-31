@@ -82,6 +82,7 @@ interface Props {
 }
 
 const props = defineProps<Props>()
+
 const emit = defineEmits(['toggle', 'assignTeam', 'statusChange'])
 const teamStore = useTeamStore()
 

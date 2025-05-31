@@ -1,5 +1,5 @@
-import { createTask, deleteMockTask, fetchMockTaskById, fetchTasks, updateMockTask } from '@/api/tasks/mockTaskApi'
-import type { TaskRequest as ApiTaskRequest } from '@/api/tasks/mockData'
+import { assignTeamToTask, createTask, deleteMockTask, fetchMockTaskById, fetchTasks, updateTask } from '@/api/TaskApi'
+import type { TaskRequest as ApiTaskRequest, TaskStatus } from '@/api/TaskApi'
 import { defineStore } from 'pinia'
 import axios from 'axios'
 
@@ -45,13 +45,13 @@ export interface FormTaskRequest {
 export enum RequestStatus {
   NEW = 'new',
   IN_PROGRESS = 'in_progress',
-  COMPLETED = 'completed'
+  COMPLETED = 'completed',
 }
 
 export const statusLabels: Record<RequestStatus, string> = {
   [RequestStatus.NEW]: 'Новая',
   [RequestStatus.IN_PROGRESS]: 'В работе',
-  [RequestStatus.COMPLETED]: 'Выполнено'
+  [RequestStatus.COMPLETED]: 'Выполнено',
 }
 
 interface TaskRequestState {
@@ -66,7 +66,7 @@ function convertApiToFormRequest(apiRequest: ApiTaskRequest): FormTaskRequest {
   return {
     id: apiRequest.id,
     project: {
-      name: apiRequest.title,
+      name: apiRequest.name,
       description: apiRequest.description,
       type: 'web' // дефолтное значение
     },
@@ -92,14 +92,14 @@ function convertApiToFormRequest(apiRequest: ApiTaskRequest): FormTaskRequest {
       }
     },
     contact: {
-      name: apiRequest.companyName, // используем название компании как имя контакта
+      name: apiRequest?.companyName || 'Отсутствует компания', // используем название компании как имя контакта
       email: 'contact@example.com',
       phone: '+7 (999) 123-45-67'
     },
     status: apiRequest.status as RequestStatus,
-    preview: apiRequest.preview,
+    preview: apiRequest?.preview || apiRequest?.name || 'Отсутствует название',
     deadline: apiRequest.deadline,
-    assignedTeamId: apiRequest.assignedTeamId
+    assignedTeamId: apiRequest?.teamId || '0'
   }
 }
 
@@ -107,13 +107,11 @@ function convertApiToFormRequest(apiRequest: ApiTaskRequest): FormTaskRequest {
 function convertFormToApiRequest(request: FormTaskRequest): ApiTaskRequest {
   return {
     id: request.id,
-    title: request.project.name,
+    name: request.project.name,
     description: request.project.description,
-    status: request.status,
-    preview: request.preview,
+    status: request.status as TaskStatus,
     deadline: request.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
-    companyName: request.contact.name,
-    assignedTeamId: request.assignedTeamId
+    content: request,
   }
 }
 
@@ -135,7 +133,6 @@ export const useTaskRequestStore = defineStore('taskRequest', {
   actions: {
     async createRequest(requestData: FormTaskRequest): Promise<FormTaskRequest> {
       console.log('requestData', requestData)
-        console.log(requestData.project.name, requestData.project.description, requestData.estimation.time, requestData.content)
         const newTask = await createTask(
           requestData.project.name,
           requestData.project.description,
@@ -147,13 +144,15 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         return convertApiToFormRequest(newTask)
     },
 
-    async fetchRequests(): Promise<FormTaskRequest[]> {
+    async fetchRequests(sort: 'deadline' | 'status' = 'status'): Promise<FormTaskRequest[]> {
       this.loading = true
       this.error = null
       
       try {
         const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]
-        const requests = await fetchTasks(token as string)
+        const lastId = this.requests[this.requests.length - 1]?.id || 0
+
+        const requests = await fetchTasks(undefined, 10, lastId, sort, token as string)
         const convertedRequests = requests.map(task => convertApiToFormRequest(task))
         this.requests.push(...convertedRequests)
         return convertedRequests
@@ -183,30 +182,35 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       }
     },
 
-    async updateRequest(id: number, requestData: FormTaskRequest): Promise<FormTaskRequest> {
+    async updateRequest(id: number, requestData: FormTaskRequest) {
       this.loading = true
       this.error = null
       
       try {
         const apiRequest = convertFormToApiRequest(requestData)
-        const updatedApiRequest = await updateMockTask(id, apiRequest)
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+        await updateTask(id, token, apiRequest)
         
-        if (!updatedApiRequest) {
-          throw new Error('Заявка не найдена')
-        }
+        this.clearCurrentRequest()
+        this.fetchRequests();
+      } catch (error) {
+        this.error = 'Произошла ошибка при обновлении заявки'
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
 
-        const convertedRequest = {
-          ...requestData,
-          id: updatedApiRequest.id,
-          status: updatedApiRequest.status as RequestStatus
-        }
+    async assignTeam(taskId: number, teamId: number) {
+      this.loading = true
+      this.error = null
       
-        const index = this.requests.findIndex(request => request.id === id)
-        if (index !== -1) {
-          this.requests[index] = convertedRequest
-        }
-        this.currentRequest = convertedRequest
-        return convertedRequest
+      try {
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+        await assignTeamToTask(taskId, teamId, token);
+        
+        this.clearCurrentRequest()
+        this.fetchRequests();
       } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
@@ -241,6 +245,10 @@ export const useTaskRequestStore = defineStore('taskRequest', {
 
     clearError(): void {
       this.error = null
+    },
+
+    clearRequests(): void {
+      this.requests = []
     },
 
     clearCurrentRequest(): void {

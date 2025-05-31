@@ -1,17 +1,27 @@
 import axios from 'axios'
-import type { TaskRequest, TaskStatus } from './mockData'
-import { bigMockTasks } from './mockData'
+export type TaskStatus = 'new' | 'in_progress' | 'completed'
 
-/**
- * Имитация задержки сети
- */
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms))
+export interface TaskRequest {
+  id: number
+  name: string
+  description: string
+  content: object
+  status: TaskStatus
+  teamId: number
+  deadline: string
+}
 
 /**
  * Получение списка задач с пагинацией
  */
-export async function fetchTasks(token: string): Promise<TaskRequest[]> {
+export async function fetchTasks(page?: number, limit?: number, skip?: number, sort?: 'deadline' | 'status', token?: string): Promise<TaskRequest[]> {
   const response = await axios.get('/api/tasks', {
+    params: {
+      page,
+      limit,
+      skip,
+      sort,
+    },
     headers: {
       Authorization: `Bearer ${token}`,
     },
@@ -31,25 +41,12 @@ export async function fetchMockTaskById(id: number, token: string): Promise<Task
   return response.data
 }
 
-export async function updateMockTask(id: number, task: TaskRequest): Promise<TaskRequest | null> {
-  await delay(300)
-  return {
-    id,
-    preview: task.preview,
-    title: task.title,
-    description: task.description,
-    status: task.status,
-    deadline: task.deadline,
-    companyName: task.companyName,
-  }
-}
-
-/**
- * Обновление статуса задачи
- */
-export async function updateMockTaskStatus(id: number, status: TaskStatus): Promise<boolean | null> {
-  await delay(300)
-  return true
+export async function updateTask(id: number, token: string, task: Omit<TaskRequest, 'id'>): Promise<void> {
+  await axios.put(`/api/tasks/${id}`, task, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
 }
 
 export async function createTask(title: string, description: string, deadline: number, content: object): Promise<TaskRequest> {
@@ -61,6 +58,20 @@ export async function createTask(title: string, description: string, deadline: n
     content: content,
   })
   return response.data
+}
+
+/**
+ * Назначение команды на задачу
+ */
+export async function assignTeamToTask(id: number, teamId: number, token: string): Promise<void> {
+  await axios.post(`/api/tasks/${id}/assign-team`, {
+    id: teamId
+  }, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+      'Content-Type': 'application/json',
+    },
+  })
 }
 
 /**

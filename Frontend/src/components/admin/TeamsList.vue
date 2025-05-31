@@ -1,72 +1,99 @@
 <template>
-  <VirtualScroll
-    :items="teamStore.teams"
-    :loading="loading"
-    ref="virtualScroll"
-    @loadMore="loadMoreItems"
-  >
-    <template #default="{ item }: { item: Team }">
-      <div class="team-card" @click="toggleTeam(item.id)">
-        <div class="team-card-header">
-          <div class="team-avatar">
-            {{ item.name[0].toUpperCase() }}
-          </div>
-          <div class="team-info">
-            <strong>{{ item.name }}</strong>
-            <div v-if="!expandedTeams[item.id]" class="team-preview">
-              {{ item.projectType }}
-            </div>
-          </div>
-          <div class="team-status" :class="item.status">
-            {{ statusLabels[item.status] }}
-          </div>
-          <div class="arrow" :class="{ 'arrow-up': expandedTeams[item.id] }">
-            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
-              <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </div>
-        </div>
+  <div class="teams-container">
+    <div class="teams-header">
+      <h2>Команды</h2>
+      <button class="create-team-btn" @click="openCreateModal">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <path d="M12 5V19M5 12H19" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+        Создать команду
+      </button>
+    </div>
 
-        <transition name="expand">
-          <div v-if="expandedTeams[item.id]" class="team-card-body">
-            <div class="team-section">
-              <h4>Состав команды:</h4>
-              <div class="team-members">
-                <div v-for="member in item.members" :key="member.id" class="team-member">
-                  <div class="member-avatar">{{ member.name[0].toUpperCase() }}</div>
-                  <div class="member-info">
-                    <div class="member-name">{{ member.name }}</div>
-                    <div class="member-role">{{ member.role }}</div>
+    <VirtualScroll
+      :items="teamStore.teams"
+      :loading="loading"
+      ref="virtualScroll"
+      @loadMore="loadMoreItems"
+    >
+      <template #default="{ item }: { item: Team }">
+        <div class="team-card" @click="toggleTeam(item.id)">
+          <div class="team-card-header">
+            <div class="team-avatar">
+              {{ item.name[0].toUpperCase() }}
+            </div>
+            <div class="team-info">
+              <strong>{{ item.name }}</strong>
+              <div v-if="!expandedTeams[item.id]" class="team-preview">
+                {{ item.projectType }}
+              </div>
+            </div>
+            <div class="team-status" :class="item.status">
+              {{ statusLabels[item.status] }}
+            </div>
+            <div class="arrow" :class="{ 'arrow-up': expandedTeams[item.id] }">
+              <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M6 9L12 15L18 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </div>
+            <button class="edit-team-btn" @click.stop="openEditModal(item)">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M15.232 5.232l3.536 3.536M4 20h4.586a1 1 0 0 0 .707-.293l9.414-9.414a2 2 0 0 0 0-2.828l-3.172-3.172a2 2 0 0 0-2.828 0l-9.414 9.414A1 1 0 0 0 4 20z" stroke="#7b5cff" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </button>
+          </div>
+
+          <transition name="expand">
+            <div v-if="expandedTeams[item.id]" class="team-card-body">
+              <div class="team-section">
+                <h4>Состав команды:</h4>
+                <div class="team-members">
+                  <div v-for="member in item.members" :key="member.id" class="team-member">
+                    <div class="member-avatar">{{ member.name[0].toUpperCase() }}</div>
+                    <div class="member-info">
+                      <div class="member-name">{{ member.name }}</div>
+                      <div class="member-role">{{ member.role }}</div>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
-            
-            <div class="team-section">
-              <h4>Стек технологий:</h4>
-              <div class="tech-stack">
-                <span v-for="tech in item.techStack" :key="tech" class="tech-badge">
-                  {{ tech }}
-                </span>
+              
+              <div class="team-section">
+                <h4>Стек технологий:</h4>
+                <div class="tech-stack">
+                  <span v-for="tech in item.techStack" :key="tech" class="tech-badge">
+                    {{ tech }}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
-        </transition>
-      </div>
-    </template>
-  </VirtualScroll>
+          </transition>
+        </div>
+      </template>
+    </VirtualScroll>
+
+    <CreateTeamModal
+      :is-open="isCreateModalOpen"
+      :team="editTeam"
+      @close="closeCreateModal"
+      @submit="handleTeamModalSubmit"
+    />
+  </div>
 </template>
 
 <script lang="ts" setup>
 import { ref, onMounted } from 'vue'
 import VirtualScroll from '../common/VirtualScroll.vue'
+import CreateTeamModal from '../common/CreateTeamModal.vue'
 import { useTeamStore } from '../../stores/teamStore'
 import type { Team } from '../../stores/teamStore'
 
 const teamStore = useTeamStore()
 const loading = ref(false)
 const virtualScroll = ref<InstanceType<typeof VirtualScroll> | null>(null)
-const expandedTeams = ref<Record<string, boolean>>({})
+const expandedTeams = ref<Record<string | number, boolean>>({})
+const isCreateModalOpen = ref(false)
+const editTeam = ref<Team | null>(null)
 
 const statusLabels: Record<Team['status'], string> = {
   'available': 'Доступна',
@@ -74,7 +101,7 @@ const statusLabels: Record<Team['status'], string> = {
   'on_break': 'На перерыве'
 }
 
-const toggleTeam = (teamId: string) => {
+const toggleTeam = (teamId: string | number) => {
   expandedTeams.value[teamId] = !expandedTeams.value[teamId]
 }
 
@@ -86,12 +113,76 @@ const loadMoreItems = async () => {
   loading.value = false
 }
 
+const openCreateModal = () => {
+  isCreateModalOpen.value = true
+  editTeam.value = null
+}
+
+const openEditModal = (team: Team) => {
+  editTeam.value = team
+  isCreateModalOpen.value = true
+}
+
+const closeCreateModal = () => {
+  isCreateModalOpen.value = false
+  editTeam.value = null
+}
+
+const handleTeamModalSubmit = (teamData: Partial<Team> & {id?: number}) => {
+  if (teamData.id !== undefined) {
+    teamStore.updateTeam(teamData)
+  } else {
+    teamStore.createTeam(teamData)
+  }
+}
+
 onMounted(() => {
   loadMoreItems()
 })
 </script>
 
 <style scoped>
+.teams-container {
+  padding: 1rem;
+}
+
+.teams-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 2rem;
+}
+
+.teams-header h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #2a262b;
+}
+
+.create-team-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.75rem 1.25rem;
+  background: #7b5cff;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.create-team-btn:hover {
+  background: #6a4de8;
+  transform: translateY(-1px);
+}
+
+.create-team-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
 .team-card {
   background: #ffffff;
   border-radius: 12px;
@@ -111,7 +202,7 @@ onMounted(() => {
 
 .team-card-header {
   display: grid;
-  grid-template-columns: auto 1fr auto auto;
+  grid-template-columns: auto 1fr auto auto auto;
   gap: 1.25rem;
   align-items: center;
 }
@@ -298,6 +389,22 @@ onMounted(() => {
   opacity: 0;
   transform: translateY(-10px);
   overflow: hidden;
+}
+
+.edit-team-btn {
+  background: #ede6fa;
+  border: none;
+  border-radius: 8px;
+  padding: 0.5rem 0.7rem;
+  margin-left: 0.5rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  transition: background 0.2s, box-shadow 0.2s;
+}
+.edit-team-btn:hover {
+  background: #d2b4f5;
+  box-shadow: 0 2px 8px rgba(123, 92, 255, 0.08);
 }
 
 @media (max-width: 600px) {
