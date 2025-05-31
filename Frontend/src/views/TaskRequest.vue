@@ -24,17 +24,38 @@
               />
             </div>
 
+            <!-- Тип приложения -->
+            <section aria-labelledby="app-type-heading" class="task-request__section task-request__section--app-type" style="margin-bottom: 0;">
+              <h2 id="app-type-heading" class="task-request__section-title">Тип приложения</h2>
+              <div role="radiogroup" aria-labelledby="app-type-heading" class="task-request__radio-group">
+                <div v-for="type in applicationTypes" :key="type.value" class="task-request__radio-option">
+                  <input 
+                    :id="type.value"
+                    v-model="formData.applicationType"
+                    :value="type.value"
+                    type="radio"
+                    required
+                    aria-required="true"
+                    :aria-label="type.label"
+                    class="task-request__radio-input"
+                  >
+                  <label :for="type.value" class="task-request__radio-label">
+                    <div class="task-request__radio-title">{{ type.label }}</div>
+                    <div class="task-request__radio-description">{{ type.description }}</div>
+                  </label>
+                </div>
+              </div>
+            </section>
+
             <div class="task-request__field">
-              <label for="project-description" class="task-request__label">Описание проекта</label>
-              <textarea 
+              <CustomInput
                 id="project-description"
                 v-model="formData.description"
-                rows="4"
+                label="Описание проекта"
+                type="textarea"
                 required
-                aria-required="true"
-                class="task-request__textarea"
                 placeholder="Опишите ваш проект"
-              ></textarea>
+              />
             </div>
           </div>
         </section>
@@ -44,15 +65,6 @@
           <h2 id="extra-params-heading" class="task-request__section-title">Параметры для расчёта срока</h2>
           
           <div class="task-request__section-content">
-            <div class="task-request__field">
-              <label for="complexity" class="task-request__label">Сложность проекта</label>
-              <select id="complexity" v-model="formData.complexity" class="task-request__input">
-                <option value="simple">Простая</option>
-                <option value="medium">Средняя</option>
-                <option value="hard">Сложная</option>
-              </select>
-            </div>
-
             <div class="task-request__field">
               <CustomInput
                 id="features-count"
@@ -82,30 +94,6 @@
               <label class="task-request__checkbox-label">
                 <input type="checkbox" v-model="formData.hasSpec" />
                 <span>Есть техническое задание</span>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <!-- Тип приложения -->
-        <section aria-labelledby="app-type-heading" class="task-request__section task-request__section--app-type">
-          <h2 id="app-type-heading" class="task-request__section-title">Тип приложения</h2>
-          
-          <div role="radiogroup" aria-labelledby="app-type-heading" class="task-request__radio-group">
-            <div v-for="type in applicationTypes" :key="type.value" class="task-request__radio-option">
-              <input 
-                :id="type.value"
-                v-model="formData.applicationType"
-                :value="type.value"
-                type="radio"
-                required
-                aria-required="true"
-                :aria-label="type.label"
-                class="task-request__radio-input"
-              >
-              <label :for="type.value" class="task-request__radio-label">
-                <div class="task-request__radio-title">{{ type.label }}</div>
-                <div class="task-request__radio-description">{{ type.description }}</div>
               </label>
             </div>
           </div>

@@ -1,47 +1,54 @@
 <template>
-  <div class="form-group">
-    <label :for="id">{{ label }}</label>
-    <div class="input-wrapper">
-      <div class="input-inner">
-        <input
-          :type="type === 'password' ? (showPassword ? 'text' : 'password') : type"
-          :id="id"
-          :value="modelValue"
-          @input="$emit('update:modelValue', $event.target.value)"
-          :required="required"
-          :placeholder="placeholder"
-          class="custom-input"
-        />
-        <button
-          v-if="type === 'password'"
-          type="button"
-          class="toggle-password"
-          @click="showPassword = !showPassword"
-          :title="showPassword ? 'Скрыть пароль' : 'Показать пароль'"
-        >
-          <svg v-if="showPassword" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"></path>
-            <line x1="1" y1="1" x2="23" y2="23"></line>
-          </svg>
-          <svg v-else xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"></path>
-            <circle cx="12" cy="12" r="3"></circle>
-          </svg>
-        </button>
-      </div>
-    </div>
+  <div class="custom-input">
+    <label :for="id" class="custom-input__label">{{ label }}</label>
+    <select
+      v-if="type === 'select'"
+      :id="id"
+      :value="modelValue"
+      @change="$emit('update:modelValue', $event.target.value)"
+      :required="required"
+      :readonly="readonly"
+      class="custom-input__select"
+    >
+      <option v-for="option in options" :key="option.value" :value="option.value">
+        {{ option.label }}
+      </option>
+    </select>
+    <textarea
+      v-else-if="type === 'textarea'"
+      :id="id"
+      :value="modelValue"
+      @input="$emit('update:modelValue', $event.target.value)"
+      :rows="rows"
+      :placeholder="placeholder"
+      :required="required"
+      :readonly="readonly"
+      class="custom-input__textarea"
+    ></textarea>
+    <input
+      v-else
+      :id="id"
+      :type="type"
+      :value="modelValue"
+      @input="$emit('update:modelValue', $event.target.value)"
+      :placeholder="placeholder"
+      :required="required"
+      :readonly="readonly"
+      :min="min"
+      class="custom-input__input"
+    />
   </div>
 </template>
 
 <script setup>
-import { ref } from 'vue'
-
-const showPassword = ref(false)
-
 defineProps({
+  id: {
+    type: String,
+    required: true
+  },
   modelValue: {
     type: [String, Number],
-    required: true
+    default: ''
   },
   label: {
     type: String,
@@ -51,17 +58,29 @@ defineProps({
     type: String,
     default: 'text'
   },
-  id: {
+  placeholder: {
     type: String,
-    required: true
+    default: ''
   },
   required: {
     type: Boolean,
     default: false
   },
-  placeholder: {
-    type: String,
-    default: ''
+  readonly: {
+    type: Boolean,
+    default: false
+  },
+  min: {
+    type: [String, Number],
+    default: undefined
+  },
+  rows: {
+    type: Number,
+    default: 4
+  },
+  options: {
+    type: Array,
+    default: () => []
   }
 })
 
@@ -69,91 +88,71 @@ defineEmits(['update:modelValue'])
 </script>
 
 <style scoped>
-.form-group {
-  width: 100%;
-  margin-bottom: 0.5rem;
-}
-
-label {
-  display: block;
-  margin-bottom: 0.5rem;
-  color: #222;
-  font-size: 1.1rem;
-  font-weight: 700;
-}
-
-.input-wrapper {
-  position: relative;
-  width: 100%;
-  z-index: 1;
-}
-
-.input-inner {
-  position: relative;
-  border-radius: 7px;
-  background: #e7e1ec;
-  padding: 0;
-}
-
 .custom-input {
-  width: 100%;
-  padding: 0.8rem 1rem 0.8rem 1rem;
-  border: none;
-  border-radius: 7px;
-  background: transparent;
-  font-size: 1.1rem;
-  font-weight: 700;
-  color: #2a262b;
-  margin: 0.2rem 0 0.2rem 0;
-  box-sizing: border-box;
-  transition: box-shadow 0.3s;
-  padding-right: 2.5rem;
-  position: relative;
-  z-index: 3;
-  outline: none;
-}
-
-.toggle-password {
-  position: absolute;
-  right: 0.5rem;
-  top: 50%;
-  transform: translateY(-50%);
-  background: none;
-  border: none;
-  padding: 0.5rem;
-  cursor: pointer;
-  color: #7b5cff;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: color 0.2s;
-  z-index: 5;
-  pointer-events: auto;
+  flex-direction: column;
+  gap: 0.5rem;
 }
 
-.toggle-password:hover {
-  color: #b86adf;
-}
-
-::placeholder {
-  color: #888;
-  opacity: 0.8;
-  font-weight: 500;
+.custom-input__label {
   font-size: 1rem;
+  color: #2c244d;
+  font-weight: 700;
+  margin-bottom: 0.2rem;
 }
 
-@media (max-width: 600px) {
-  label {
-    font-size: 0.95rem;
-  }
-  .custom-input {
-    padding: 0.6rem 0.7rem 0.6rem 0.7rem;
-    font-size: 0.95rem;
-    border-radius: 5px;
-    padding-right: 2.2rem;
-  }
-  .toggle-password {
-    padding: 0.3rem;
-  }
+.custom-input__input,
+.custom-input__select,
+.custom-input__textarea {
+  background: #ede6fa;
+  border: none;
+  border-radius: 12px;
+  padding: 0.9rem 1.2rem;
+  font-size: 1rem;
+  color: #2c244d;
+  margin-bottom: 0.2rem;
+  box-shadow: 0 1px 4px 0 rgba(136,95,255,0.04);
+  transition: box-shadow 0.2s;
+  width: 100%;
+  min-height: 48px;
+  height: 48px;
+  box-sizing: border-box;
+}
+
+.custom-input__textarea {
+  min-height: 48px;
+  height: 48px;
+  resize: vertical;
+}
+
+.custom-input__input:focus,
+.custom-input__textarea:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #b16fff;
+}
+
+.custom-input__input::placeholder,
+.custom-input__textarea::placeholder {
+  color: #b6a9d6;
+  opacity: 1;
+}
+
+.custom-input__select {
+  background: #ede6fa;
+  border: none;
+  border-radius: 12px;
+  padding: 0.7rem 1rem;
+  font-size: 1rem;
+  color: #2c244d;
+  margin-bottom: 0.2rem;
+  box-shadow: 0 1px 4px 0 rgba(136,95,255,0.04);
+  transition: box-shadow 0.2s;
+  width: 100%;
+  appearance: none;
+}
+
+.custom-input__select:focus {
+  outline: none;
+  box-shadow: 0 0 0 2px #b16fff;
 }
 </style> 
