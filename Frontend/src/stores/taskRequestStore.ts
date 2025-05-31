@@ -7,19 +7,20 @@ export interface TaskRequest {
   title: string
   description: string
   status: RequestStatus
+  deadline: string // ISO date string
+  assignedTeamId?: string
+  companyName: string
 }
 
 export enum RequestStatus {
   NEW = 'new',
   IN_PROGRESS = 'in_progress',
-  PENDING = 'pending',
   COMPLETED = 'completed'
 }
 
 export const statusLabels: Record<RequestStatus, string> = {
   [RequestStatus.NEW]: 'Новая',
   [RequestStatus.IN_PROGRESS]: 'В работе',
-  [RequestStatus.PENDING]: 'В ожидании',
   [RequestStatus.COMPLETED]: 'Выполнено'
 }
 
@@ -54,6 +55,8 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         // Mock response
         const newRequest = {
           id: Date.now(),
+          deadline: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // Default deadline 7 days from now
+          companyName: 'Новая компания',
           ...requestData
         } as TaskRequest
         
@@ -76,7 +79,8 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         const requests = await fetchMockTasks(1, 10)
         const convertedRequests = requests.map(request => ({
           ...request,
-          status: request.status as RequestStatus
+          status: request.status as RequestStatus,
+          deadline: new Date(Date.now() + Math.floor(Math.random() * 14 + 1) * 24 * 60 * 60 * 1000).toISOString() // Random deadline between 1-14 days
         }))
         this.requests.push(...convertedRequests)
       } catch (error: any) {
