@@ -5,7 +5,7 @@
         <h1 class="gradient-title">Спасибо за вашу заявку!</h1>
         <p class="message">Мы получили вашу заявку и в ближайшее время свяжемся с вами для обсуждения деталей.</p>
         <div class="status-info">
-          <p>Статус вашей заявки: <span class="status">В обработке</span></p>
+          <p>Ваша заявка принята в <span class="status">работу</span></p>
         </div>
         <button class="back-button" @click="goBack">Вернуться на главную</button>
       </div>
