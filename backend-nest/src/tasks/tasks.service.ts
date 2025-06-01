@@ -24,32 +24,44 @@ export class TasksService {
   }
 
   async findAll(params: {
-    page: number;
     limit: number;
     skip: number;
     sort: 'deadline' | 'status';
+    query?: string;
+    status?: TaskStatus;
   }) {
-    const { page, limit, skip, sort } = params;
-    const tasks = await this.tasksRepository.find({
-      relations: ['assignedTeam'],
-      order: { [sort]: 'DESC' },
-      skip: skip || (page - 1) * limit,
-      take: limit,
-    });
+    const { limit, skip, sort, query, status } = params;
+
+    const queryBuilder = this.tasksRepository.createQueryBuilder('task');
+
+    if (query) {
+      queryBuilder.where(
+        'task.name LIKE :query OR task.description LIKE :query OR task.content LIKE :query',
+        { query: `%${query}%` },
+      );
+    }
+
+    if (status) {
+      queryBuilder.andWhere('task.status = :status', { status });
+    }
+    if (sort == 'deadline') queryBuilder.orderBy('task.deadline', 'ASC');
+    if (sort == 'status') queryBuilder.orderBy('task.status', 'DESC');
+
+    queryBuilder.skip(skip).take(limit);
+
+    const tasks = await queryBuilder.getMany();
+
     return tasks;
   }
 
   async findOne(id: number): Promise<Task> {
     this.logger.log(`Finding task with id: ${id}`);
-    const task = await this.tasksRepository.findOne({
-      where: { id },
-      relations: ['assignedTeam'],
-    });
+    const task = await this.tasksRepository.findOne({ where: { id } });
     if (!task) {
       this.logger.warn(`Task with id ${id} not found`);
-      throw new NotFoundException(`Task with id ${id} not found`);
+    } else {
+      this.logger.log(`Task with id ${id} found`);
     }
-    this.logger.log(`Task with id ${id} found`);
     return task;
   }
 

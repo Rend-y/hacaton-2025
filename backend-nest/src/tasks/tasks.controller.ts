@@ -10,13 +10,14 @@ import {
   Query,
 } from '@nestjs/common';
 import { TasksService } from './tasks.service';
-import { Task } from './entities/task.entity';
+import { Task, TaskStatus } from './entities/task.entity';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import {
   ApiTags,
   ApiOperation,
   ApiResponse,
   ApiBearerAuth,
+  ApiQuery,
 } from '@nestjs/swagger';
 import { UpdateTaskDto } from './dto/update-task.dto';
 import { CreateTaskDto } from './dto/create-task.dto';
@@ -37,18 +38,56 @@ export class TasksController {
     return this.tasksService.create(createTaskDto);
   }
 
-  @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
   @Get()
-  @ApiOperation({ summary: 'Get all tasks' })
+  @ApiOperation({
+    summary: 'Get all tasks with pagination, sorting, search and filtering',
+  })
   @ApiResponse({ status: 200, description: 'Return all tasks', type: [Task] })
+  @ApiQuery({
+    name: 'page',
+    required: false,
+    type: Number,
+    description: 'Page number',
+  })
+  @ApiQuery({
+    name: 'limit',
+    required: false,
+    type: Number,
+    description: 'Items per page',
+  })
+  @ApiQuery({
+    name: 'skip',
+    required: false,
+    type: Number,
+    description: 'Skip items',
+  })
+  @ApiQuery({
+    name: 'sort',
+    required: false,
+    enum: ['deadline', 'status'],
+    description: 'Sort field',
+  })
+  @ApiQuery({ name: 'query', required: false, description: 'Search query' })
+  @ApiQuery({
+    name: 'status',
+    required: false,
+    enum: TaskStatus,
+    description: 'Filter by status',
+  })
   findAll(
-    @Query('page') page: number = 1,
     @Query('limit') limit: number = 10,
     @Query('skip') skip: number = 0,
     @Query('sort') sort: 'deadline' | 'status' = 'deadline',
+    @Query('query') query?: string,
+    @Query('status') status?: TaskStatus,
   ) {
-    return this.tasksService.findAll({ page, limit, skip, sort });
+    return this.tasksService.findAll({
+      limit,
+      skip,
+      sort,
+      query,
+      status,
+    });
   }
 
   @ApiBearerAuth()
