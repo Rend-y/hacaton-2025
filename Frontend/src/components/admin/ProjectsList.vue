@@ -60,24 +60,43 @@ const statusLabels: Record<string, string> = {
 const months = computed(() => {
   if (!tasks.value.length) return [];
   
-  const dates = tasks.value.map(t => new Date(t.deadline));
-  const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
-  const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
+  // Ensure we have at least 6 months from current date
+  const startDate = new Date();
+  const endDates = tasks.value.map(t => new Date(t.deadline));
+  const maxDate = new Date(Math.max(
+    ...endDates.map(d => d.getTime()),
+    new Date(startDate.getFullYear(), startDate.getMonth() + 5, 1).getTime()
+  ));
   
   const months: string[] = [];
-  const currentDate = new Date(minDate);
-  currentDate.setDate(1); // Start from the first day of the month
+  const currentDate = new Date(startDate.getFullYear(), startDate.getMonth(), 1);
   
-  while (currentDate <= maxDate) {
-    months.push(new Intl.DateTimeFormat('ru', { month: 'long', year: 'numeric' }).format(currentDate));
+  // Ensure we generate at least two months even if no tasks
+  do {
+    const monthStr = new Intl.DateTimeFormat('ru', { 
+      month: 'long', 
+      year: 'numeric' 
+    }).format(currentDate);
+    months.push(monthStr);
+    
     currentDate.setMonth(currentDate.getMonth() + 1);
-  }
+  } while (
+    currentDate <= maxDate || 
+    months.length < 2 // Minimum 2 months
+  );
+  
+  console.log('Generated months:', months);
+  console.log('Start date:', startDate);
+  console.log('Max date:', maxDate);
+  console.log('Tasks deadlines:', tasks.value.map(t => t.deadline));
   
   return months;
 });
 
 // Get tasks for a specific team
 const teamTasks = (teamId: number) => {
+  console.log('Getting tasks for team:', teamId);
+  console.log('Available tasks:', tasks.value);
   return tasks.value.filter(t => t.teamId === teamId);
 };
 
@@ -89,15 +108,42 @@ const getTaskStyle = (task: TaskRequest) => {
   
   if (!monthsList.length) return {};
   
-  // Calculate start position
-  const startMonth = startDate.getMonth() + startDate.getFullYear() * 12;
-  const firstMonth = new Date(monthsList[0].split(' ')[1]);
-  const firstMonthValue = firstMonth.getMonth() + firstMonth.getFullYear() * 12;
-  const startPosition = startMonth - firstMonthValue;
+  // Parse first month date
+  const [firstMonthName, firstYearStr] = monthsList[0].split(' ');
+  const firstDate = new Date(parseInt(firstYearStr), getMonthNumber(firstMonthName), 1);
   
-  // Calculate width (in months)
-  const endMonth = endDate.getMonth() + endDate.getFullYear() * 12;
-  const width = endMonth - startMonth + 1;
+  // Debug logging
+  console.log('Task:', task.name);
+  console.log('Start date:', startDate.toISOString());
+  console.log('End date:', endDate.toISOString());
+  console.log('First grid date:', firstDate.toISOString());
+  console.log('Months list:', monthsList);
+  
+  // Calculate start position (in months)
+  const startPosition = (startDate.getFullYear() - firstDate.getFullYear()) * 12 + 
+    (startDate.getMonth() - firstDate.getMonth());
+    
+  // Calculate total months in the grid
+  const lastMonthStr = monthsList[monthsList.length - 1];
+  const [lastMonthName, lastYearStr] = lastMonthStr.split(' ');
+  const lastDate = new Date(parseInt(lastYearStr), getMonthNumber(lastMonthName) + 1, 0); // Last day of the month
+  
+  // Calculate months difference for width
+  let monthsDiff = 0;
+  let currentDate = new Date(startDate);
+  while (currentDate <= endDate) {
+    monthsDiff++;
+    currentDate.setMonth(currentDate.getMonth() + 1);
+  }
+  
+  console.log('Start position:', startPosition);
+  console.log('Months difference:', monthsDiff);
+  
+  // Ensure the task doesn't extend beyond the grid
+  const totalMonths = monthsList.length;
+  if (startPosition + monthsDiff > totalMonths) {
+    monthsDiff = totalMonths - startPosition;
+  }
   
   const colors = {
     new: '#4ECDC4',
@@ -107,8 +153,18 @@ const getTaskStyle = (task: TaskRequest) => {
   
   return {
     backgroundColor: colors[task.status] || '#FF6B6B',
-    gridColumn: `${startPosition + 1} / span ${width}`
+    gridColumn: `${startPosition + 1} / span ${monthsDiff}`
   };
+};
+
+// Helper function to convert month name to number
+const getMonthNumber = (monthName: string): number => {
+  const months: { [key: string]: number } = {
+    'январь': 0, 'февраль': 1, 'март': 2, 'апрель': 3,
+    'май': 4, 'июнь': 5, 'июль': 6, 'август': 7,
+    'сентябрь': 8, 'октябрь': 9, 'ноябрь': 10, 'декабрь': 11
+  };
+  return months[monthName.toLowerCase()] || 0;
 };
 
 const formatDate = (date: string) => {
@@ -167,6 +223,8 @@ h2 {
   border: 1px solid #e0e0e0;
   border-radius: 4px;
   overflow: auto;
+  position: relative;
+  height: calc(100vh - 200px);
 }
 
 .gantt-header {
@@ -175,20 +233,44 @@ h2 {
   background-color: #f8f9fa;
   position: sticky;
   top: 0;
-  z-index: 2;
+  z-index: 3;
+  width: max-content;
+  min-width: 100%;
 }
 
 .team-header {
+  min-width: 250px;
   width: 250px;
   padding: 12px;
   font-weight: bold;
   border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  position: sticky;
+  left: 0;
+  z-index: 4;
+}
+
+.team-name {
+  min-width: 250px;
+  width: 250px;
+  padding: 12px;
+  border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
+  position: sticky;
+  left: 0;
+  z-index: 2;
+  font-weight: normal;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 
 .months-header {
   display: grid;
   grid-auto-flow: column;
   grid-auto-columns: minmax(150px, 1fr);
+  flex: 1;
+  min-width: max-content;
 }
 
 .month-cell {
@@ -196,26 +278,19 @@ h2 {
   text-align: center;
   font-weight: bold;
   border-right: 1px solid #e0e0e0;
+  background-color: #f8f9fa;
 }
 
 .gantt-body {
-  min-height: 400px;
+  position: relative;
+  width: max-content;
+  min-width: 100%;
 }
 
 .gantt-row {
   display: flex;
   border-bottom: 1px solid #e0e0e0;
   min-height: 60px;
-}
-
-.team-name {
-  width: 250px;
-  padding: 12px;
-  border-right: 1px solid #e0e0e0;
-  background-color: #f8f9fa;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
 }
 
 .team-status {
@@ -247,6 +322,7 @@ h2 {
   position: relative;
   flex: 1;
   padding: 4px 0;
+  min-width: max-content;
 }
 
 .project-bar {
