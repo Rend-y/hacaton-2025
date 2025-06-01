@@ -181,6 +181,10 @@ onMounted(async () => {
   flex-shrink: 0;
 }
 
+:deep(.custom-input) {
+  max-width: 67rem;
+}
+
 .requests-container {
   flex: 1;
   min-height: 0;

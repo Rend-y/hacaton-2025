@@ -60,6 +60,7 @@ export class TeamsService {
     this.logger.log(`Changing status of team ${id} to ${status}`);
     const team = await this.findOne(id);
     team.status = status;
+    this.logger.log(`Team ${id} status changed to ${team.status}`);
     const updatedTeam = await this.teamsRepository.save(team);
     this.logger.log(`Team ${id} status changed to ${status}`);
     return updatedTeam;
