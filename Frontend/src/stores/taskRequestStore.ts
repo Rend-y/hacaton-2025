@@ -59,6 +59,7 @@ interface TaskRequestState {
   currentRequest: FormTaskRequest | null;
   loading: boolean;
   error: string | null;
+  blockLoading: boolean;
 }
 
 // Функция для конвертации API формата в формат формы
@@ -120,7 +121,8 @@ export const useTaskRequestStore = defineStore('taskRequest', {
     requests: [],
     currentRequest: null,
     loading: false,
-    error: null
+    error: null,
+    blockLoading: false
   }),
 
   getters: {
@@ -145,7 +147,7 @@ export const useTaskRequestStore = defineStore('taskRequest', {
     },
 
     async fetchRequests(searchQuery: string, sort: 'deadline' | 'status' = 'status'): Promise<FormTaskRequest[]> {
-      console.log('searchQuery', searchQuery)
+      if (this.blockLoading) return []
       this.loading = true
       this.error = null
       
@@ -154,6 +156,9 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         const lastId = this.requests[this.requests.length - 1]?.id || 0
 
         const requests = await fetchTasks(searchQuery, 10, lastId, sort, token as string)
+        if (requests.length < 10) {
+          this.blockLoading = true
+        }
         const convertedRequests = requests.map(task => convertApiToFormRequest(task))
         this.requests.push(...convertedRequests)
         return convertedRequests
