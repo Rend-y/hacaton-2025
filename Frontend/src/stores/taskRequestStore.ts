@@ -62,44 +62,44 @@ interface TaskRequestState {
 }
 
 // Функция для конвертации API формата в формат формы
-function convertApiToFormRequest(apiRequest: ApiTaskRequest): FormTaskRequest {
+function convertApiToFormRequest(apiRequest: ApiTaskRequest<FormTaskRequest>): FormTaskRequest {
   return {
     id: apiRequest.id,
     project: {
-      name: apiRequest.name,
-      description: apiRequest.description,
-      type: 'web' // дефолтное значение
+      name: apiRequest.content.project.name,
+      description: apiRequest.content.project.description,
+      type: apiRequest.content.project.type
     },
     features: {
-      core: [],
-      custom: null
+      core: apiRequest.content.features.core,
+      custom: apiRequest.content.features.custom
     },
     requirements: {
-      design: false,
-      externalIntegration: false,
-      support: false,
-      paymentIntegration: false,
-      adminPanel: false
+      design: apiRequest.content.requirements.design,
+      externalIntegration: apiRequest.content.requirements.externalIntegration,
+      support: apiRequest.content.requirements.support,
+      paymentIntegration: apiRequest.content.requirements.paymentIntegration,
+      adminPanel: apiRequest.content.requirements.adminPanel
     },
     estimation: {
       time: {
-        months: 3,
-        recommended: 3
+        months: apiRequest.content.estimation.time.months,
+        recommended: apiRequest.content.estimation.time.recommended
       },
       budget: {
-        amount: 150000,
-        recommended: 150000
+        amount: apiRequest.content.estimation.budget.amount,
+        recommended: apiRequest.content.estimation.budget.recommended
       }
     },
     contact: {
-      name: apiRequest?.companyName || 'Отсутствует компания', // используем название компании как имя контакта
-      email: 'contact@example.com',
-      phone: '+7 (999) 123-45-67'
+      name: apiRequest.content.contact.name,
+      email: apiRequest.content.contact.email,
+      phone: apiRequest.content.contact.phone
     },
     status: apiRequest.status as RequestStatus,
-    preview: apiRequest?.preview || apiRequest?.name || 'Отсутствует название',
+    preview: apiRequest.content.preview || apiRequest?.name || 'Отсутствует название',
     deadline: apiRequest.deadline,
-    assignedTeamId: apiRequest?.teamId || '0'
+    assignedTeamId: apiRequest.teamId?.toString() ?? '0'
   }
 }
 
@@ -193,7 +193,7 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         await updateTask(id, token, apiRequest)
         
         this.clearCurrentRequest()
-        this.fetchRequests();
+        this.fetchRequests('', 'status');
       } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
@@ -211,7 +211,7 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         await assignTeamToTask(taskId, teamId, token);
         
         this.clearCurrentRequest()
-        this.fetchRequests();
+        this.fetchRequests('', 'status');
       } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error

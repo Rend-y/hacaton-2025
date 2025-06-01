@@ -1,11 +1,11 @@
 import axios from 'axios'
 export type TaskStatus = 'new' | 'in_progress' | 'completed'
 
-export interface TaskRequest {
+export interface TaskRequest<T = object> {
   id: number
   name: string
   description: string
-  content: object
+  content: T
   status: TaskStatus
   teamId: number
   deadline: string
@@ -54,7 +54,7 @@ export async function createTask(title: string, description: string, deadline: n
   const response = await axios.post('/api/tasks', {
     name: title,
     description: description,
-    deadline: new Date(Date.now() + (deadline * 24 * 60 * 60 * 1000)).toISOString(),
+    deadline: new Date(Date.now() + (deadline * 30 * 24 * 60 * 60 * 1000)).toISOString(),
     content: content,
   })
   return response.data
