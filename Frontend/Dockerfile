@@ -1,4 +1,4 @@
-FROM node:20-slim
+FROM node:18-alpine
 
 WORKDIR /app
 
@@ -11,8 +11,11 @@ RUN npm install
 # Copy project files
 COPY . .
 
-# Expose port
-EXPOSE 5173
+# Build the project
+RUN npm run build
 
-# Start the application in development mode
-CMD ["npm", "run", "dev", "--", "--host", "0.0.0.0"] 
+# Expose port
+EXPOSE 3000
+
+# Start the application
+CMD ["npm", "start"] 
