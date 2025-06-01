@@ -144,7 +144,8 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         return convertApiToFormRequest(newTask)
     },
 
-    async fetchRequests(sort: 'deadline' | 'status' = 'status'): Promise<FormTaskRequest[]> {
+    async fetchRequests(searchQuery: string, sort: 'deadline' | 'status' = 'status'): Promise<FormTaskRequest[]> {
+      console.log('searchQuery', searchQuery)
       this.loading = true
       this.error = null
       
@@ -152,7 +153,7 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]
         const lastId = this.requests[this.requests.length - 1]?.id || 0
 
-        const requests = await fetchTasks(undefined, 10, lastId, sort, token as string)
+        const requests = await fetchTasks(searchQuery, 10, lastId, sort, token as string)
         const convertedRequests = requests.map(task => convertApiToFormRequest(task))
         this.requests.push(...convertedRequests)
         return convertedRequests

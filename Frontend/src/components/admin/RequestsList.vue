@@ -1,6 +1,11 @@
 <template>
   <div class="requests-list">
-    <div class="sorting-controls">
+    <div class="controls">
+      <CustomInput
+        v-model="searchQuery"
+        placeholder="Поиск по названию или описанию"
+        icon="SearchIcon"
+      />
       <div class="sort-wrapper">
         <svg class="sort-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M3 7H21" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
@@ -53,6 +58,7 @@
 import { ref, computed, onMounted, reactive, watch } from 'vue'
 import RequestCard from './RequestCard.vue'
 import AssignTeamModal from './AssignTeamModal.vue'
+import CustomInput from '@/components/CustomInput.vue'
 import VirtualScroll from '../common/VirtualScroll.vue'
 import { useTaskRequestStore } from '@/stores/taskRequestStore'
 import type { FormTaskRequest } from '@/stores/taskRequestStore'
@@ -68,6 +74,7 @@ const isAssignModalOpen = ref(false)
 const selectedRequestId = ref<number | undefined>(undefined)
 const expandedRequestIds = reactive<Record<number, boolean>>({})
 const teamStore = useTeamStore()
+const searchQuery = ref('')
 
 const handleAssignTeam = (request: FormTaskRequest) => {
   selectedRequestId.value = request.id
@@ -130,7 +137,7 @@ const loadMoreItems = async () => {
   
   loading.value = true
   try {
-    await taskRequestStore.fetchRequests(sortBy.value)
+    await taskRequestStore.fetchRequests(searchQuery.value, sortBy.value)
     
   } catch (error) {
     console.error('Error loading requests:', error)
@@ -141,7 +148,12 @@ const loadMoreItems = async () => {
 
 watch(sortBy, async () => {
   taskRequestStore.clearRequests();
-  await taskRequestStore.fetchRequests(sortBy.value)
+  loadMoreItems()
+})
+
+watch(searchQuery, async () => {
+  taskRequestStore.clearRequests();
+  loadMoreItems()
 })
 
 // Инициализация
@@ -159,12 +171,13 @@ onMounted(async () => {
   min-height: 0;
 }
 
-.sorting-controls {
+.controls {
   padding: 1.25rem;
   background: white;
   border-bottom: 1px solid #eaeaea;
   display: flex;
-  justify-content: flex-end;
+  justify-content: space-between;
+  gap: 1rem;
   flex-shrink: 0;
 }
 
@@ -185,6 +198,51 @@ onMounted(async () => {
 
 :deep(.virtual-scroll-content) {
   padding: 1rem;
+}
+
+.search-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+  background: #f8f9fa;
+  border-radius: 12px;
+  padding: 0.5rem;
+  transition: all 0.2s ease;
+  flex: 1;
+  max-width: 400px;
+}
+
+.search-wrapper:hover {
+  background: #ede6fa;
+}
+
+.search-wrapper:focus-within {
+  background: #ede6fa;
+  box-shadow: 0 0 0 2px #7b5cff40;
+}
+
+.search-icon {
+  color: #7b5cff;
+  margin-right: 0.5rem;
+  margin-left: 0.5rem;
+}
+
+.search-input {
+  border: none;
+  background: transparent;
+  padding: 0.5rem;
+  font-size: 0.95rem;
+  color: #2a262b;
+  width: 100%;
+  font-weight: 500;
+}
+
+.search-input:focus {
+  outline: none;
+}
+
+.search-input::placeholder {
+  color: #6c757d;
 }
 
 .sort-wrapper {
@@ -245,17 +303,14 @@ onMounted(async () => {
 }
 
 @media (max-width: 600px) {
-  .sorting-controls {
+  .controls {
     padding: 1rem;
+    flex-direction: column;
   }
 
   .sort-wrapper {
     max-width: none;
     width: 100%;
-  }
-
-  .sort-select {
-    font-size: 0.9rem;
   }
 }
 </style> 

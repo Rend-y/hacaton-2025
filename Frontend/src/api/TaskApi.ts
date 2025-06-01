@@ -14,13 +14,13 @@ export interface TaskRequest {
 /**
  * Получение списка задач с пагинацией
  */
-export async function fetchTasks(page?: number, limit?: number, skip?: number, sort?: 'deadline' | 'status', token?: string): Promise<TaskRequest[]> {
+export async function fetchTasks(searchQuery?: string, limit?: number, skip?: number, sort?: 'deadline' | 'status', token?: string): Promise<TaskRequest[]> {
   const response = await axios.get('/api/tasks', {
     params: {
-      page,
       limit,
       skip,
       sort,
+      query: searchQuery,
     },
     headers: {
       Authorization: `Bearer ${token}`,
