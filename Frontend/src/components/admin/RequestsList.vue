@@ -34,7 +34,7 @@
             :description="item.project.description"
             :status="item.status"
             :deadline="item.deadline"
-            :assigned-team-id="item.assignedTeamId"
+            :assigned-team-id="item.assignedTeamId?.toString()"
             :is-expanded="!!expandedRequestIds[item.id]"
             :company-name="item.contact.name"
             @toggle="toggleRequest(item)"
@@ -179,6 +179,10 @@ onMounted(async () => {
   justify-content: space-between;
   gap: 1rem;
   flex-shrink: 0;
+}
+
+:deep(.custom-input) {
+  max-width: 67rem;
 }
 
 .requests-container {

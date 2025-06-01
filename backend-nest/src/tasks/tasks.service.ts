@@ -72,6 +72,8 @@ export class TasksService {
         `Task ${id} completed, changing team status to AVAILABLE`,
       );
       await this.teamsService.changeStatus(task.teamId, TeamStatus.AVAILABLE);
+      task.assignedTeam = null;
+      task.teamId = null;
     }
     await this.tasksRepository.update(id, task);
     const updatedTask = await this.findOne(id);

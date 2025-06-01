@@ -88,7 +88,7 @@ const teamStore = useTeamStore()
 
 const assignedTeam = computed(() => {
   if (!props.assignedTeamId) return null
-  return teamStore.teams.find(team => team.id === props.assignedTeamId)
+  return teamStore.teams.find(team => team.id.toString() === props.assignedTeamId)
 })
 
 const isDeadlineUrgent = (deadline: string) => {
