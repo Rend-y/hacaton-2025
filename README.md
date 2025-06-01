@@ -11,6 +11,13 @@
 - [Backend API](http://localhost:4000)
 - [Swagger API документация](http://localhost:4000/api)
 
+## Тестовые учетные данные
+Для тестирования приложения можно использовать следующие учетные данные:
+```
+Email: admin@example.com
+Пароль: admin123
+```
+
 ## Требования
 - Docker
 - Docker Compose
