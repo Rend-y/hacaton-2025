@@ -10,6 +10,7 @@
 - [Frontend приложение](http://localhost:3000)
 - [Backend API](http://localhost:4000)
 - [Swagger API документация](http://localhost:4000/api)
+- [Figma дизайн](https://www.figma.com/design/j8FWb3r7xtMe9CV7VCkqmG/Untitled?node-id=0-1&t=Regs8Hi00pyGA14A-1)
 
 ## Тестовые учетные данные
 Для тестирования приложения можно использовать следующие учетные данные:
