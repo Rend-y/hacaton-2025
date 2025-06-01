@@ -192,8 +192,9 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
         await updateTask(id, token, apiRequest)
         
-        this.clearCurrentRequest()
-        this.fetchRequests('', 'status');
+        await this.clearCurrentRequest()
+        await this.clearRequests()
+        await this.fetchRequests('', 'status');
       } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
@@ -210,8 +211,9 @@ export const useTaskRequestStore = defineStore('taskRequest', {
         const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
         await assignTeamToTask(taskId, teamId, token);
         
-        this.clearCurrentRequest()
-        this.fetchRequests('', 'status');
+        await this.clearCurrentRequest()
+        await this.clearRequests()
+        await this.fetchRequests('', 'status');
       } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
