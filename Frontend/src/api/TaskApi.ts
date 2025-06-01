@@ -65,7 +65,7 @@ export async function createTask(title: string, description: string, deadline: n
  */
 export async function assignTeamToTask(id: number, teamId: number, token: string): Promise<void> {
   await axios.post(`/api/tasks/${id}/assign-team`, {
-    id: teamId
+    teamId
   }, {
     headers: {
       Authorization: `Bearer ${token}`,
