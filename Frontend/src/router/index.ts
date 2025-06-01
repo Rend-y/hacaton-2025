@@ -19,8 +19,8 @@ const router = createRouter({
       component: Requests,
     },
     {
-      path: '/admin/login',
-      name: 'admin-login',
+      path: '/login',
+      name: 'login',
       component: Login,
       beforeEnter: (to, from, next) => {
         const tokenCookie = document.cookie.split('; ').find(row => row.startsWith('token='));
@@ -42,7 +42,7 @@ const router = createRouter({
         if (token) {
           next()
         } else {
-          next('admin/login')
+          next('login')
         }
       },
     },

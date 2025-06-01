@@ -68,6 +68,9 @@ export class TasksService {
   async update(id: number, task: Partial<Task>): Promise<Task> {
     this.logger.log(`Updating task with id: ${id}`);
     if (task.status == TaskStatus.COMPLETED) {
+      this.logger.log(
+        `Task ${id} completed, changing team status to AVAILABLE`,
+      );
       await this.teamsService.changeStatus(task.teamId, TeamStatus.AVAILABLE);
     }
     await this.tasksRepository.update(id, task);

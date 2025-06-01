@@ -41,7 +41,7 @@ const email = ref('')
 
 const handleLogin = () => {
   userStore.login(email.value, password.value)
-  router.push(' ')
+  router.push('/admin')
 }
 </script>
 
