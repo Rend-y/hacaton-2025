@@ -16,7 +16,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="project-name"
-                v-model="formData.projectName"
+                v-model="formData.project.name"
                 label="Название проекта"
                 type="text"
                 required
@@ -24,89 +24,84 @@
               />
             </div>
 
-            <div class="task-request__field">
-              <label for="project-description" class="task-request__label">Описание проекта</label>
-              <textarea 
-                id="project-description"
-                v-model="formData.description"
-                rows="4"
-                required
-                aria-required="true"
-                class="task-request__textarea"
-                placeholder="Опишите ваш проект"
-              ></textarea>
-            </div>
-          </div>
-        </section>
-
-        <!-- Дополнительные параметры для расчета срока -->
-        <section aria-labelledby="extra-params-heading" class="task-request__section task-request__section--extra-params">
-          <h2 id="extra-params-heading" class="task-request__section-title">Параметры для расчёта срока</h2>
-          
-          <div class="task-request__section-content">
-            <div class="task-request__field">
-              <label for="complexity" class="task-request__label">Сложность проекта</label>
-              <select id="complexity" v-model="formData.complexity" class="task-request__input">
-                <option value="simple">Простая</option>
-                <option value="medium">Средняя</option>
-                <option value="hard">Сложная</option>
-              </select>
-            </div>
+            <!-- Тип приложения -->
+            <section aria-labelledby="app-type-heading" class="task-request__section task-request__section--app-type" style="margin-bottom: 0;">
+              <h2 id="app-type-heading" class="task-request__section-title">Тип приложения</h2>
+              <div role="radiogroup" aria-labelledby="app-type-heading" class="task-request__radio-group">
+                <div v-for="type in applicationTypes" :key="type.value" class="task-request__radio-option">
+                  <input 
+                    :id="type.value"
+                    v-model="formData.project.type"
+                    :value="type.value"
+                    type="radio"
+                    required
+                    aria-required="true"
+                    :aria-label="type.label"
+                    class="task-request__radio-input"
+                  >
+                  <label :for="type.value" class="task-request__radio-label">
+                    <div class="task-request__radio-title">{{ type.label }}</div>
+                    <div class="task-request__radio-description">{{ type.description }}</div>
+                  </label>
+                </div>
+              </div>
+            </section>
 
             <div class="task-request__field">
               <CustomInput
-                id="features-count"
-                v-model="formData.featuresCount"
-                label="Количество ключевых функций"
-                type="number"
-                min="1"
-                placeholder="Введите число функций"
+                id="project-description"
+                v-model="formData.project.description"
+                label="Описание проекта"
+                type="textarea"
+                required
+                :rows="6"
+                placeholder="Опишите ваш проект"
               />
             </div>
 
-            <div class="task-request__field task-request__checkbox-field">
-              <label class="task-request__checkbox-label">
-                <input type="checkbox" v-model="formData.needDesign" />
-                <span>Нужен дизайн</span>
-              </label>
+            <!-- Ключевые функции -->
+            <div class="task-request__field">
+              <label class="task-request__label">Ключевые функции</label>
+              <div class="task-request__tags-group">
+                <button
+                  v-for="feature in featuresOptions"
+                  :key="feature.value"
+                  type="button"
+                  class="task-request__tag"
+                  :class="{ 'task-request__tag--active': formData.features.core.includes(feature.value) }"
+                  @click="toggleFeature(feature.value)"
+                >
+                  {{ feature.label }}
+                </button>
+              </div>
             </div>
 
-            <div class="task-request__field task-request__checkbox-field">
-              <label class="task-request__checkbox-label">
-                <input type="checkbox" v-model="formData.needIntegration" />
-                <span>Нужна интеграция с внешними сервисами</span>
-              </label>
-            </div>
-
-            <div class="task-request__field task-request__checkbox-field">
-              <label class="task-request__checkbox-label">
-                <input type="checkbox" v-model="formData.hasSpec" />
-                <span>Есть техническое задание</span>
-              </label>
-            </div>
-          </div>
-        </section>
-
-        <!-- Тип приложения -->
-        <section aria-labelledby="app-type-heading" class="task-request__section task-request__section--app-type">
-          <h2 id="app-type-heading" class="task-request__section-title">Тип приложения</h2>
-          
-          <div role="radiogroup" aria-labelledby="app-type-heading" class="task-request__radio-group">
-            <div v-for="type in applicationTypes" :key="type.value" class="task-request__radio-option">
-              <input 
-                :id="type.value"
-                v-model="formData.applicationType"
-                :value="type.value"
-                type="radio"
+            <div v-if="formData.features.core.includes('other')" class="task-request__field">
+              <CustomInput
+                id="features-other"
+                v-model="formData.features.custom"
+                label="Опишите ключевые функции"
+                type="textarea"
+                :rows="3"
                 required
-                aria-required="true"
-                :aria-label="type.label"
-                class="task-request__radio-input"
-              >
-              <label :for="type.value" class="task-request__radio-label">
-                <div class="task-request__radio-title">{{ type.label }}</div>
-                <div class="task-request__radio-description">{{ type.description }}</div>
-              </label>
+                placeholder="Опишите, какие функции нужны"
+              />
+            </div>
+
+            <div class="task-request__field">
+              <label class="task-request__label">Дополнительные функции</label>
+              <div class="task-request__tags-group">
+                <button
+                  v-for="param in extraParamsOptions"
+                  :key="param.value"
+                  type="button"
+                  class="task-request__tag"
+                  :class="{ 'task-request__tag--active': formData.requirements[param.value] }"
+                  @click="toggleExtraParam(param.value)"
+                >
+                  {{ param.label }}
+                </button>
+              </div>
             </div>
           </div>
         </section>
@@ -117,26 +112,33 @@
           
           <div class="task-request__section-content">
             <div class="task-request__field">
-              <CustomInput
-                id="estimated-time"
-                v-model="formData.estimatedTime"
-                label="Ориентировочные сроки (в месяцах)"
-                type="number"
-                required
-                placeholder="Введите срок"
-                :readonly="true"
+              <label class="task-request__label">Ориентировочные сроки (в месяцах)</label>
+              <input
+                type="range"
+                min="1"
+                :max="MAX_TIME"
+                step="1"
+                v-model="formData.estimation.time.months"
+                class="task-request__slider"
               />
+              <div class="task-request__slider-value">
+                {{ formData.estimation.time.months }} мес.
+              </div>
             </div>
 
             <div class="task-request__field">
-              <CustomInput
-                id="estimated-budget"
-                v-model="formData.estimatedBudget"
-                label="Ориентировочный бюджет (в рублях)"
-                type="number"
-                required
-                placeholder="Введите бюджет"
+              <label class="task-request__label">Ориентировочный бюджет (в рублях)</label>
+              <input
+                type="range"
+                min="50000"
+                :max="MAX_BUDGET"
+                step="50000"
+                v-model="formData.estimation.budget.amount"
+                class="task-request__slider"
               />
+              <div class="task-request__slider-value">
+                {{ formData.estimation.budget.amount.toLocaleString() }} ₽
+              </div>
             </div>
           </div>
         </section>
@@ -148,8 +150,19 @@
           <div class="task-request__section-content">
             <div class="task-request__field">
               <CustomInput
+                id="contact-name"
+                v-model="formData.contact.name"
+                label="Как к вам обращаться"
+                type="text"
+                required
+                placeholder="Введите ваше имя"
+              />
+            </div>
+
+            <div class="task-request__field">
+              <CustomInput
                 id="email"
-                v-model="formData.email"
+                v-model="formData.contact.email"
                 label="Email"
                 type="email"
                 required
@@ -160,7 +173,7 @@
             <div class="task-request__field">
               <CustomInput
                 id="phone"
-                v-model="formData.phone"
+                v-model="formData.contact.phone"
                 label="Телефон"
                 type="tel"
                 required
@@ -187,98 +200,261 @@
   </main>
 </template>
 
-<script setup>
+<script setup lang="ts">
 import { ref, computed, watch } from 'vue'
-import { useTaskRequestStore } from '@/stores/taskRequestStore'
+import { useTaskRequestStore, RequestStatus, type FormTaskRequest } from '@/stores/taskRequestStore'
 import { useRouter } from 'vue-router'
 import CustomInput from '@/components/CustomInput.vue'
 
+interface FormData extends Omit<FormTaskRequest, 'id' | 'status' | 'preview'> {
+  project: {
+    name: string;
+    description: string;
+    type: string;
+  };
+  features: {
+    core: string[];
+    custom: string | null;
+  };
+  requirements: {
+    design: boolean;
+    externalIntegration: boolean;
+    support: boolean;
+    paymentIntegration: boolean;
+    adminPanel: boolean;
+  };
+  estimation: {
+    time: {
+      months: number;
+      recommended: number;
+    };
+    budget: {
+      amount: number;
+      recommended: number;
+    };
+  };
+  contact: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+}
+
 const router = useRouter()
 const store = useTaskRequestStore()
+
+const formData = ref<FormData>({
+  project: {
+    name: '',
+    description: '',
+    type: ''
+  },
+  features: {
+    core: [],
+    custom: null
+  },
+  requirements: {
+    design: false,
+    externalIntegration: false,
+    support: false,
+    paymentIntegration: false,
+    adminPanel: false
+  },
+  estimation: {
+    time: {
+      months: 1,
+      recommended: 1
+    },
+    budget: {
+      amount: 50000,
+      recommended: 50000
+    }
+  },
+  contact: {
+    name: '',
+    email: '',
+    phone: ''
+  }
+})
 
 const applicationTypes = [
   {
     value: 'web',
     label: 'Веб-приложение',
-    description: 'Сайт или веб-приложение, доступное через браузер'
+    description: 'Сайт или веб-приложение, доступное через браузер',
+    basePrice: 100000,
+    baseMonth: 2
   },
   {
     value: 'mobile',
     label: 'Мобильное приложение',
-    description: 'Приложение для iOS и/или Android'
+    description: 'Приложение для iOS и/или Android',
+    basePrice: 150000,
+    baseMonth: 3
   },
   {
     value: 'desktop',
     label: 'Десктопное приложение',
-    description: 'Приложение для Windows, macOS или Linux'
+    description: 'Приложение для Windows, macOS или Linux',
+    basePrice: 200000,
+    baseMonth: 4
   },
   {
-    value: 'other',
-    label: 'Другое',
-    description: 'Иной тип приложения или сервиса'
+    value: 'cross-platform',
+    label: 'Кросс-платформа',
+    description: 'Приложение для всех платформ',
+    basePrice: 200000,
+    baseMonth: 4
   }
 ]
 
-const formData = ref({
-  projectName: '',
-  description: '',
-  applicationType: '',
-  estimatedTime: '',
-  estimatedBudget: '',
-  email: '',
-  phone: '',
-  complexity: 'simple',
-  featuresCount: 1,
-  needDesign: false,
-  needIntegration: false,
-  hasSpec: false
-})
+const featuresOptions = [
+  { value: 'auth', label: 'Авторизация/регистрация', weight: 1.15 },
+  { value: 'profile', label: 'Профиль пользователя', weight: 1.10 },
+  { value: 'file-upload', label: 'Загрузка файлов', weight: 1.20 },
+  { value: 'chat', label: 'Чат/мессенджер', weight: 1.35 },
+  { value: 'notifications', label: 'Уведомления', weight: 1.15 },
+  { value: 'search', label: 'Поиск', weight: 1.10 },
+  { value: 'dashboard', label: 'Дашборд', weight: 1.20 },
+  { value: 'other', label: 'Другое', weight: 1.00 }
+]
+
+const extraParamsOptions = [
+  { value: 'needDesign', label: 'Нужен дизайн', weight: 1.5 },
+  { value: 'needIntegration', label: 'Интеграция с внешними сервисами', weight: 2.0 },
+  { value: 'needSupport', label: 'Поддержка после релиза', weight: 1.0 },
+  { value: 'needPaymentIntegration', label: 'Интеграция с платёжными системами', weight: 1.5 },
+  { value: 'hasAdminPanel', label: 'Нужна административная панель', weight: 1.0 }
+]
 
 const loading = computed(() => store.isLoading)
 const error = computed(() => store.getError)
 
-watch(
-  () => [
-    formData.value.applicationType,
-    formData.value.complexity,
-    formData.value.featuresCount,
-    formData.value.needDesign,
-    formData.value.needIntegration,
-    formData.value.hasSpec
-  ],
-  ([type, complexity, featuresCount, needDesign, needIntegration, hasSpec]) => {
-    let base = 0
-    if (type === 'web') base = 2
-    else if (type === 'mobile') base = 3
-    else if (type === 'desktop') base = 4
-    else if (type === 'other') base = 2
-    else base = 0
-    // Сложность
-    if (complexity === 'medium') base += 1
-    if (complexity === 'hard') base += 2
-    // Количество функций
-    if (Number(featuresCount) > 5) base += 1
-    // Дизайн
-    if (needDesign) base += 1
-    // Интеграция
-    if (needIntegration) base += 1
-    // ТЗ
-    if (hasSpec) base -= 1
-    if (base < 1) base = 1
-    formData.value.estimatedTime = base
+const baseTime = ref(1)
+const baseBudget = ref(50000)
+
+const MIN_TIME = 1
+const MIN_BUDGET = 50000
+const MAX_TIME = 36
+const MAX_BUDGET = 5000000
+const MONTH_COST_MULTIPLIER = 1.5
+const K_SMOOTH = 0.5
+
+let updating = false
+
+const recommendedTime = computed(() => baseTime.value)
+const recommendedBudget = computed(() => baseBudget.value)
+
+watch(() => formData.value.estimation.time.months, (newTime) => {
+  if (updating) return
+  updating = true
+  const t = Math.max(MIN_TIME, Math.min(Number(newTime), MAX_TIME))
+  let newBudget = MONTH_COST_MULTIPLIER * baseBudget.value * Math.pow(baseTime.value / t, 1 / K_SMOOTH)
+  newBudget = Math.max(MIN_BUDGET, Math.min(Math.round(newBudget), MAX_BUDGET))
+  formData.value.estimation.budget.amount = newBudget
+  updating = false
+})
+
+watch(() => formData.value.estimation.budget.amount, (newBudget) => {
+  if (updating) return
+  updating = true
+  const b = Math.max(MIN_BUDGET, Math.min(Number(newBudget), MAX_BUDGET))
+  let newTime = b === 0 ? MAX_TIME : baseTime.value * Math.pow(MONTH_COST_MULTIPLIER * baseBudget.value / b, K_SMOOTH)
+  newTime = Math.max(MIN_TIME, Math.min(Math.round(newTime), MAX_TIME))
+  formData.value.estimation.time.months = newTime
+  updating = false
+})
+
+function recalculateEstimatedTime() {
+  let base = 0
+  let basePrice = 0
+  const type = formData.value.project.type
+  const featuresList = formData.value.features.core
+  const extraParams = Object.entries(formData.value.requirements)
+    .filter(([_, value]) => value)
+    .map(([key]) => key)
+
+  // Базовые значения для сроков и цены
+  if (type === 'web') { base = 2; basePrice = 100000 }
+  else if (type === 'mobile') { base = 3; basePrice = 150000 }
+  else if (type === 'desktop') { base = 4; basePrice = 200000 }
+  else if (type === 'cross-platform') { base = 4; basePrice = 200000 }
+  else { base = 0; basePrice = 0 }
+
+  // Учитываем количество функций
+  const featuresCount = featuresList.filter(f => f !== 'other').length
+  base += featuresCount * 0.5
+  basePrice += featuresCount * 10000
+
+  // Параметры с весами
+  for (const param of extraParams) {
+    const found = extraParamsOptions.find(opt => opt.value === param)
+    if (found) {
+      base += found.weight
+      basePrice += found.weight * 15000 // вклад параметра в цену
+    }
   }
-)
+
+  // Множители по функциям
+  let multiplier = 1
+  let priceMultiplier = 1
+  for (const feature of featuresList) {
+    const found = featuresOptions.find(opt => opt.value === feature)
+    if (found) {
+      multiplier *= found.weight
+      priceMultiplier *= found.weight
+    }
+  }
+
+  let result = Math.round(base * multiplier)
+  if (result < 1) result = 1
+  baseTime.value = result
+  formData.value.estimation.time.months = result
+
+  // Итоговая цена
+  let price = Math.round(basePrice * priceMultiplier)
+  baseBudget.value = price
+  formData.value.estimation.budget.amount = price
+  formData.value.estimation.budget.recommended = price
+}
 
 const submitRequest = async () => {
   try {
-    await store.createRequest(formData.value)
-    // После успешного создания заявки перенаправляем на страницу со списком заявок
+    const requestData: FormTaskRequest = {
+      id: Date.now(),
+      ...formData.value,
+      status: RequestStatus.NEW,
+      preview: formData.value.project.description.substring(0, 100) + '...'
+    }
+    
+    await store.createRequest(requestData)
     router.push('/requests')
   } catch (error) {
-    // Ошибка уже обработана в store
     console.error('Error submitting request:', error)
   }
 }
+
+function toggleFeature(value: string) {
+  const idx = formData.value.features.core.indexOf(value)
+  if (idx === -1) {
+    formData.value.features.core.push(value)
+  } else {
+    formData.value.features.core.splice(idx, 1)
+  }
+  recalculateEstimatedTime()
+}
+
+function toggleExtraParam(value: string) {
+  const paramKey = value as keyof typeof formData.value.requirements
+  formData.value.requirements[paramKey] = !formData.value.requirements[paramKey]
+  recalculateEstimatedTime()
+}
+
+// watch для других важных параметров
+watch(
+  () => formData.value.project.type,
+  recalculateEstimatedTime
+)
 </script>
 
 <style scoped>
@@ -287,7 +463,7 @@ const submitRequest = async () => {
   border-radius: 24px;
   box-shadow: 0 4px 32px 0 rgba(136,95,255,0.08);
   padding: 2.5rem 2rem;
-  max-width: 540px;
+  max-width: 1000px;
   margin: 2.5rem auto;
 }
 
@@ -397,6 +573,7 @@ const submitRequest = async () => {
   position: relative;
   flex: 1 1 180px;
   min-width: 160px;
+  display: flex;
 }
 
 .task-request__radio-input {
@@ -406,7 +583,9 @@ const submitRequest = async () => {
 }
 
 .task-request__radio-label {
-  display: block;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
   background: #fff;
   border: 2px solid #ede6fa;
   border-radius: 14px;
@@ -435,6 +614,10 @@ const submitRequest = async () => {
 .task-request__radio-description {
   font-size: 0.93rem;
   color: #7b6fa9;
+  flex-grow: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .task-request__submit-wrapper {
@@ -477,10 +660,10 @@ const submitRequest = async () => {
   border: 1.5px solid #ffd6d6;
 }
 
-@media (max-width: 700px) {
+@media (max-width: 1040px) {
   .task-request {
     margin: 1rem;
-    padding: 1rem;
+    padding: 1.5rem;
   }
   .task-request__radio-group {
     flex-direction: column;
@@ -532,5 +715,49 @@ const submitRequest = async () => {
   outline: none;
   border-color: #885fff;
   box-shadow: 0 0 0 2px #b16fff;
+}
+.task-request__checkbox-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1rem 2rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-request__tags-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.7rem 1rem;
+  margin-bottom: 0.5rem;
+}
+
+.task-request__tag {
+  background: #ede6fa;
+  color: #885fff;
+  border: none;
+  border-radius: 16px;
+  padding: 0.5rem 1.2rem;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.2s, color 0.2s, box-shadow 0.2s;
+  box-shadow: 0 1px 4px 0 rgba(136,95,255,0.04);
+  outline: none;
+}
+
+.task-request__tag--active {
+  background: linear-gradient(90deg, #885fff 0%, #b16fff 100%);
+  color: #fff;
+  box-shadow: 0 2px 8px 0 rgba(136,95,255,0.12);
+}
+
+.task-request__slider {
+  width: 100%;
+  margin: 0.5rem 0;
+}
+.task-request__slider-value {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: #885fff;
+  margin-bottom: 0.2rem;
 }
 </style>

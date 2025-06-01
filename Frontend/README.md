@@ -14,7 +14,7 @@ TypeScript cannot handle type information for `.vue` imports by default, so we r
 
 See [Vite Configuration Reference](https://vite.dev/config/).
 
-## Project Setup
+## Project Setupgit push --set-upstream origin develop
 
 ```sh
 npm install

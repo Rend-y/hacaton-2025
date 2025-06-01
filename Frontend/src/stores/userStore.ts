@@ -1,9 +1,12 @@
+import { api } from '@/api'
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
 export const useUserStore = defineStore('user', {
   state: () => ({
     username: '',
     email: '',
+    accessToken: '',
   }),
   actions: {
     setUsername(username: string) {
@@ -12,8 +15,11 @@ export const useUserStore = defineStore('user', {
     setEmail(email: string) {
       this.email = email
     },
-    login(email: string, password: string) {
-      console.log(email, password)
+    async login(email: string, password: string) {
+      const token = await api.login(email, password)
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`
+      this.accessToken = token;
+      document.cookie = `token=${token}; path=/; max-age=3600;`
     },
       logout() {
         console.log('logout')

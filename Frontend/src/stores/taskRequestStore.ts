@@ -1,297 +1,180 @@
+import { assignTeamToTask, createTask, deleteMockTask, fetchMockTaskById, fetchTasks, updateTask } from '@/api/TaskApi'
+import type { TaskRequest as ApiTaskRequest, TaskStatus } from '@/api/TaskApi'
 import { defineStore } from 'pinia'
+import axios from 'axios'
 
-export interface TaskRequest {
-  id: number
-  preview: string
-  title: string
-  description: string
-  status: RequestStatus
+export interface FormTaskRequest {
+  id: number;
+  project: {
+    name: string;
+    description: string;
+    type: string;
+  };
+  features: {
+    core: string[];
+    custom: string | null;
+  };
+  requirements: {
+    design: boolean;
+    externalIntegration: boolean;
+    support: boolean;
+    paymentIntegration: boolean;
+    adminPanel: boolean;
+  };
+  estimation: {
+    time: {
+      months: number;
+      recommended: number;
+    };
+    budget: {
+      amount: number;
+      recommended: number;
+    };
+  };
+  contact: {
+    name: string;
+    email: string;
+    phone: string;
+  };
+  status: RequestStatus;
+  preview: string;
+  assignedTeamId?: string;
+  deadline?: string;
 }
 
 export enum RequestStatus {
   NEW = 'new',
   IN_PROGRESS = 'in_progress',
-  PENDING = 'pending',
-  COMPLETED = 'completed'
+  COMPLETED = 'completed',
 }
 
 export const statusLabels: Record<RequestStatus, string> = {
   [RequestStatus.NEW]: 'Новая',
   [RequestStatus.IN_PROGRESS]: 'В работе',
-  [RequestStatus.PENDING]: 'В ожидании',
-  [RequestStatus.COMPLETED]: 'Выполнено'
+  [RequestStatus.COMPLETED]: 'Выполнено',
 }
 
 interface TaskRequestState {
-  requests: TaskRequest[]
-  currentRequest: TaskRequest | null
-  loading: boolean
-  error: string | null,
+  requests: FormTaskRequest[];
+  currentRequest: FormTaskRequest | null;
+  loading: boolean;
+  error: string | null;
+}
+
+// Функция для конвертации API формата в формат формы
+function convertApiToFormRequest(apiRequest: ApiTaskRequest<FormTaskRequest>): FormTaskRequest {
+  return {
+    id: apiRequest.id,
+    project: {
+      name: apiRequest.content.project.name,
+      description: apiRequest.content.project.description,
+      type: apiRequest.content.project.type
+    },
+    features: {
+      core: apiRequest.content.features.core,
+      custom: apiRequest.content.features.custom
+    },
+    requirements: {
+      design: apiRequest.content.requirements.design,
+      externalIntegration: apiRequest.content.requirements.externalIntegration,
+      support: apiRequest.content.requirements.support,
+      paymentIntegration: apiRequest.content.requirements.paymentIntegration,
+      adminPanel: apiRequest.content.requirements.adminPanel
+    },
+    estimation: {
+      time: {
+        months: apiRequest.content.estimation.time.months,
+        recommended: apiRequest.content.estimation.time.recommended
+      },
+      budget: {
+        amount: apiRequest.content.estimation.budget.amount,
+        recommended: apiRequest.content.estimation.budget.recommended
+      }
+    },
+    contact: {
+      name: apiRequest.content.contact.name,
+      email: apiRequest.content.contact.email,
+      phone: apiRequest.content.contact.phone
+    },
+    status: apiRequest.status as RequestStatus,
+    preview: apiRequest.content.preview || apiRequest?.name || 'Отсутствует название',
+    deadline: apiRequest.deadline,
+    assignedTeamId: apiRequest.teamId?.toString() ?? '0'
+  }
+}
+
+// Функция для конвертации формата формы в API формат
+function convertFormToApiRequest(request: FormTaskRequest): ApiTaskRequest {
+  return {
+    id: request.id,
+    name: request.project.name,
+    description: request.project.description,
+    status: request.status as TaskStatus,
+    deadline: request.deadline || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString(),
+    content: request,
+  }
 }
 
 export const useTaskRequestStore = defineStore('taskRequest', {
   state: (): TaskRequestState => ({
-    requests: [
-  {
-    id: 1,
-    preview: 'Разработка мобильного приложения для доставки еды с функцией отслеживания заказа...',
-    title: 'FoodDelivery App',
-    description: 'Необходимо разработать кроссплатформенное мобильное приложение для доставки еды с функциями: геолокация, отслеживание заказа в реальном времени, система рейтингов и отзывов.',
-    status: RequestStatus.COMPLETED
-  },
-    {
-    id: 2,
-    preview: 'Создание платформы для онлайн-обучения с поддержкой видеоконференций...',
-    title: 'EduPlatform',
-    description: 'Разработка веб-платформы для проведения онлайн-курсов с интеграцией видеоконференций, системой тестирования и отслеживания прогресса студентов.',
-    status: RequestStatus.COMPLETED
-  },
-  {
-    id: 3,
-    preview: 'Разработка системы управления складом с интеграцией RFID...',
-    title: 'Warehouse Management System',
-    description: 'Создание комплексной системы управления складом с поддержкой RFID-меток, автоматическим учетом товаров и генерацией отчетов.',
-    status: RequestStatus.COMPLETED
-  },
-  {
-    id: 4,
-    preview: 'Создание маркетплейса для продажи цифровых товаров...',
-    title: 'Digital Marketplace',
-    description: 'Разработка платформы для продажи цифровых товаров с системой защиты авторских прав и автоматической доставкой.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 5,
-    preview: 'Разработка системы мониторинга состояния здоровья пациентов...',
-    title: 'Health Monitoring System',
-    description: 'Создание системы для удаленного мониторинга жизненных показателей пациентов с оповещением врачей в критических ситуациях.',
-    status: RequestStatus.NEW
-  },
-  {
-    id: 6,
-    preview: 'Создание платформы для управления арендой недвижимости...',
-    title: 'Property Management Platform',
-    description: 'Разработка системы для управления арендой недвижимости с автоматизацией платежей, договоров и коммуникации между арендодателем и арендатором.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 7,
-    preview: 'Разработка системы управления задачами для команд...',
-    title: 'Team Task Manager',
-    description: 'Создание платформы для управления проектами с интеграцией календаря, системой уведомлений и аналитикой производительности.',
-    status: RequestStatus.NEW
-  },
-    {
-    id: 8,
-    preview: 'Создание платформы для онлайн-обучения с поддержкой видеоконференций...',
-    title: 'EduPlatform',
-    description: 'Разработка веб-платформы для проведения онлайн-курсов с интеграцией видеоконференций, системой тестирования и отслеживания прогресса студентов.',
-    status: RequestStatus.COMPLETED
-  },
-  {
-    id: 9,
-    preview: 'Разработка системы управления складом с интеграцией RFID...',
-    title: 'Warehouse Management System',
-    description: 'Создание комплексной системы управления складом с поддержкой RFID-меток, автоматическим учетом товаров и генерацией отчетов.',
-    status: RequestStatus.COMPLETED
-  },
-  {
-    id: 10,
-    preview: 'Создание маркетплейса для продажи цифровых товаров...',
-    title: 'Digital Marketplace',
-    description: 'Разработка платформы для продажи цифровых товаров с системой защиты авторских прав и автоматической доставкой.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 11,
-    preview: 'Разработка системы мониторинга состояния здоровья пациентов...',
-    title: 'Health Monitoring System',
-    description: 'Создание системы для удаленного мониторинга жизненных показателей пациентов с оповещением врачей в критических ситуациях.',
-    status: RequestStatus.NEW
-  },
-      {
-    id: 12,
-    preview: 'Создание платформы для управления арендой недвижимости...',
-    title: 'Property Management Platform',
-    description: 'Разработка системы для управления арендой недвижимости с автоматизацией платежей, договоров и коммуникации между арендодателем и арендатором.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 13,
-    preview: 'Разработка системы управления задачами для команд...',
-    title: 'Team Task Manager',
-    description: 'Создание платформы для управления проектами с интеграцией календаря, системой уведомлений и аналитикой производительности.',
-    status: RequestStatus.NEW
-  },
-    {
-    id: 14,
-    preview: 'Создание платформы для онлайн-обучения с поддержкой видеоконференций...',
-    title: 'EduPlatform',
-    description: 'Разработка веб-платформы для проведения онлайн-курсов с интеграцией видеоконференций, системой тестирования и отслеживания прогресса студентов.',
-    status: RequestStatus.COMPLETED
-  },
-  {
-    id: 15,
-    preview: 'Разработка системы управления складом с интеграцией RFID...',
-    title: 'Warehouse Management System',
-    description: 'Создание комплексной системы управления складом с поддержкой RFID-меток, автоматическим учетом товаров и генерацией отчетов.',
-    status: RequestStatus.COMPLETED
-  },
-  {
-    id: 16,
-    preview: 'Создание маркетплейса для продажи цифровых товаров...',
-    title: 'Digital Marketplace',
-    description: 'Разработка платформы для продажи цифровых товаров с системой защиты авторских прав и автоматической доставкой.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 17,
-    preview: 'Разработка системы мониторинга состояния здоровья пациентов...',
-    title: 'Health Monitoring System',
-    description: 'Создание системы для удаленного мониторинга жизненных показателей пациентов с оповещением врачей в критических ситуациях.',
-    status: RequestStatus.NEW
-  },
-  {
-    id: 18,
-    preview: 'Создание платформы для управления арендой недвижимости...',
-    title: 'Property Management Platform',
-    description: 'Разработка системы для управления арендой недвижимости с автоматизацией платежей, договоров и коммуникации между арендодателем и арендатором.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 19,
-    preview: 'Разработка системы управления задачами для команд...',
-    title: 'Team Task Manager',
-    description: 'Создание платформы для управления проектами с интеграцией календаря, системой уведомлений и аналитикой производительности.',
-    status: RequestStatus.NEW
-  },
-  {
-    id: 20,
-    preview: 'Создание платформы для краудфандинга...',
-    title: 'Crowdfunding Platform',
-    description: 'Разработка платформы для сбора средств на проекты с системой верификации и автоматическим распределением средств.',
-    status: RequestStatus.IN_PROGRESS
-  },
-  {
-    id: 21,
-    preview: 'Разработка системы управления контентом для медиа...',
-    title: 'Media CMS',
-    description: 'Создание системы управления контентом для медиа-компаний с поддержкой мультимедиа и автоматической публикацией.',
-    status: RequestStatus.NEW
-  },
-  {
-    id: 22,
-    preview: 'Создание платформы для онлайн-консультаций...',
-    title: 'Online Consultation Platform',
-    description: 'Разработка платформы для проведения онлайн-консультаций с поддержкой видеозвонков и системой оплаты.',
-    status: RequestStatus.IN_PROGRESS
-  }
-],
+    requests: [],
     currentRequest: null,
     loading: false,
-    error: null,
+    error: null
   }),
 
   getters: {
-    getRequests: (state): TaskRequest[] => state.requests,
-    getCurrentRequest: (state): TaskRequest | null => state.currentRequest,
+    getRequests: (state): FormTaskRequest[] => state.requests,
+    getCurrentRequest: (state): FormTaskRequest | null => state.currentRequest,
     isLoading: (state): boolean => state.loading,
     getError: (state): string | null => state.error
   },
 
   actions: {
-    async createRequest(requestData: Partial<TaskRequest>): Promise<TaskRequest> {
+    async createRequest(requestData: FormTaskRequest): Promise<FormTaskRequest> {
+      console.log('requestData', requestData)
+        const newTask = await createTask(
+          requestData.project.name,
+          requestData.project.description,
+          requestData.estimation.time.months,
+          requestData
+        );
+        this.requests.push(convertApiToFormRequest(newTask))
+        this.currentRequest = convertApiToFormRequest(newTask)
+        return convertApiToFormRequest(newTask)
+    },
+
+    async fetchRequests(searchQuery: string, sort: 'deadline' | 'status' = 'status'): Promise<FormTaskRequest[]> {
+      console.log('searchQuery', searchQuery)
       this.loading = true
       this.error = null
       
       try {
-        // Mock response
-        const newRequest = {
-          id: Date.now(),
-          ...requestData
-        } as TaskRequest
-        
-        this.requests.push(newRequest)
-        this.currentRequest = newRequest
-        return newRequest
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1]
+        const lastId = this.requests[this.requests.length - 1]?.id || 0
+
+        const requests = await fetchTasks(searchQuery, 10, lastId, sort, token as string)
+        const convertedRequests = requests.map(task => convertApiToFormRequest(task))
+        this.requests.push(...convertedRequests)
+        return convertedRequests
       } catch (error: any) {
-        this.error = 'Произошла ошибка при создании заявки'
+        this.error = 'Произошла ошибка при загрузке заявок'
         throw error
       } finally {
         this.loading = false
       }
     },
 
-    async fetchRequests(): Promise<TaskRequest[]> {
+    async fetchRequestById(id: number): Promise<void> {
       this.loading = true
       this.error = null
       
       try {
-        // Generate random tasks
-        const taskTemplates: Array<Partial<Omit<TaskRequest, 'id' | 'status'>>> = [
-          {
-            title: 'FoodDelivery App',
-            preview: 'Разработка мобильного приложения для доставки еды с функцией отслеживания заказа...',
-            description: 'Необходимо разработать кроссплатформенное мобильное приложение для доставки еды с функциями: геолокация, отслеживание заказа в реальном времени, система рейтингов и отзывов.'
-          },
-          {
-            title: 'EduPlatform',
-            preview: 'Создание платформы для онлайн-обучения с поддержкой видеоконференций...',
-            description: 'Разработка веб-платформы для проведения онлайн-курсов с интеграцией видеоконференций, системой тестирования и отслеживания прогресса студентов.'
-          },
-          {
-            title: 'Warehouse Management System',
-            preview: 'Разработка системы управления складом с интеграцией RFID...',
-            description: 'Создание комплексной системы управления складом с поддержкой RFID-меток, автоматическим учетом товаров и генерацией отчетов.'
-          },
-          {
-            title: 'Digital Marketplace',
-            preview: 'Создание маркетплейса для продажи цифровых товаров...',
-            description: 'Разработка платформы для продажи цифровых товаров с системой защиты авторских прав и автоматической доставкой.'
-          },
-          {
-            title: 'Health Monitoring System',
-            preview: 'Разработка системы мониторинга состояния здоровья пациентов...',
-            description: 'Создание системы для удаленного мониторинга жизненных показателей пациентов с оповещением врачей в критических ситуациях.'
-          }
-        ];
-
-        const statuses = Object.values(RequestStatus);
-        const mockRequests: TaskRequest[] = Array.from({ length: 20 }, (_, index) => {
-          const template: Partial<Omit<TaskRequest, 'id' | 'status'>> = taskTemplates[Math.floor(Math.random() * taskTemplates.length)];
-          const status:RequestStatus = statuses[Math.floor(Math.random() * statuses.length)];
-          
-          return {
-            id: this.requests.length + 1,
-            ...template,
-            status
-          } as TaskRequest;
-        });
-
-        return mockRequests;
-      } catch (error: any) {
-        this.error = 'Произошла ошибка при загрузке заявок';
-        throw error;
-      } finally {
-        this.loading = false;
-      }
-    },
-
-    async fetchRequestById(id: number): Promise<TaskRequest> {
-      this.loading = true
-      this.error = null
-      
-      try {
-        // Mock data
-        const mockRequest: TaskRequest = {
-          id,
-          preview: 'Разработка мобильного приложения для доставки еды с функцией отслеживания заказа...',
-          title: 'FoodDelivery App',
-          description: 'Необходимо разработать кроссплатформенное мобильное приложение для доставки еды с функциями: геолокация, отслеживание заказа в реальном времени, система рейтингов и отзывов.',
-          status: RequestStatus.COMPLETED
+        const apiRequest = await fetchMockTaskById(id)
+        if (!apiRequest) {
+          throw new Error('Заявка не найдена')
         }
-        this.currentRequest = mockRequest
-        return mockRequest
+        this.currentRequest = convertApiToFormRequest(apiRequest)
       } catch (error: any) {
         this.error = 'Произошла ошибка при загрузке заявки'
         throw error
@@ -300,24 +183,38 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       }
     },
 
-    async updateRequest(id: number, requestData: Partial<TaskRequest>): Promise<TaskRequest> {
+    async updateRequest(id: number, requestData: FormTaskRequest) {
       this.loading = true
       this.error = null
       
       try {
-        // Mock response
-        const updatedRequest = {
-          id,
-          ...requestData
-        } as TaskRequest
+        const apiRequest = convertFormToApiRequest(requestData)
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+        await updateTask(id, token, apiRequest)
         
-        const index = this.requests.findIndex(request => request.id === id)
-        if (index !== -1) {
-          this.requests[index] = updatedRequest
-        }
-        this.currentRequest = updatedRequest
-        return updatedRequest
-      } catch (error: any) {
+        await this.clearCurrentRequest()
+        await this.clearRequests()
+        await this.fetchRequests('', 'status');
+      } catch (error) {
+        this.error = 'Произошла ошибка при обновлении заявки'
+        throw error
+      } finally {
+        this.loading = false
+      }
+    },
+
+    async assignTeam(taskId: number, teamId: number) {
+      this.loading = true
+      this.error = null
+      
+      try {
+        const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1] as string
+        await assignTeamToTask(taskId, teamId, token);
+        
+        await this.clearCurrentRequest()
+        await this.clearRequests()
+        await this.fetchRequests('', 'status');
+      } catch (error) {
         this.error = 'Произошла ошибка при обновлении заявки'
         throw error
       } finally {
@@ -330,8 +227,14 @@ export const useTaskRequestStore = defineStore('taskRequest', {
       this.error = null
       
       try {
-        // Mock deletion
-        this.requests = this.requests.filter(request => request.id !== id)
+        const deletedId = await deleteMockTask(id)
+        if (deletedId === null) {
+          throw new Error('Заявка не найдена')
+        }
+        const index = this.requests.findIndex(request => request.id === id) 
+        if (index !== -1) {
+          this.requests.splice(index, 1)
+        }
         if (this.currentRequest?.id === id) {
           this.currentRequest = null
         }
@@ -345,6 +248,10 @@ export const useTaskRequestStore = defineStore('taskRequest', {
 
     clearError(): void {
       this.error = null
+    },
+
+    clearRequests(): void {
+      this.requests = []
     },
 
     clearCurrentRequest(): void {

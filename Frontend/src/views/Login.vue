@@ -32,12 +32,17 @@
 import { ref } from 'vue'
 import { useUserStore } from '@/stores/userStore'
 import CustomInput from '@/components/CustomInput.vue'
+import { useRouter } from 'vue-router'
 
+const router = useRouter()
 const userStore = useUserStore()
 const password = ref('')
 const email = ref('')
 
-const handleLogin = () => userStore.login(email.value, password.value)
+const handleLogin = () => {
+  userStore.login(email.value, password.value)
+  router.push('/admin')
+}
 </script>
 
 <style scoped>
