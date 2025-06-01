@@ -13,23 +13,28 @@
       
       <div class="gantt-body">
         <div v-for="team in teams" :key="team.id" class="gantt-row">
-          <div class="team-name">{{ team.name }}</div>
+          <div class="team-name">
+            {{ team.name }}
+            <div class="team-status" :class="team.status">
+              {{ statusLabels[team.status] }}
+            </div>
+          </div>
           <div class="timeline">
             <div 
-              v-for="project in teamProjects(team.id)" 
-              :key="project.id"
+              v-for="task in teamTasks(team.id)" 
+              :key="task.id"
               class="project-bar"
-              :style="getProjectStyle(project)"
-              :title="project.name"
+              :style="getTaskStyle(task)"
+              :title="`${task.name} (${formatDate(task.deadline)})`"
             >
-              {{ project.name }}
+              {{ task.name }}
             </div>
           </div>
         </div>
       </div>
     </div>
     <div v-else class="no-data">
-      Нет данных о проектах
+      Нет данных о командах
     </div>
   </div>
 </template>
@@ -37,37 +42,25 @@
 <script lang="ts" setup>
 import { ref, onMounted, computed } from 'vue';
 import axios from 'axios';
+import { useTeamStore, type Team } from '@/stores/teamStore';
+import type { TaskRequest } from '@/api/TaskApi';
 
-interface Team {
-  id: number;
-  name: string;
-}
+const teamStore = useTeamStore();
+const tasks = ref<TaskRequest[]>([]);
 
-interface Project {
-  id: number;
-  name: string;
-  teamId: number;
-  startDate: string;
-  endDate: string;
-}
+const teams = computed(() => teamStore.teams);
 
-const teams = ref<Team[]>([]);
-const projects = ref<Project[]>([]);
-
-// Generate random color for projects
-const getRandomColor = () => {
-  const colors = [
-    '#FF6B6B', '#4ECDC4', '#45B7D1', '#96CEB4',
-    '#FFEEAD', '#D4A5A5', '#9B59B6', '#3498DB'
-  ];
-  return colors[Math.floor(Math.random() * colors.length)];
+const statusLabels: Record<string, string> = {
+  available: 'Доступна',
+  in_project: 'В проекте',
+  on_break: 'На перерыве'
 };
 
 // Calculate months range
 const months = computed(() => {
-  if (!projects.value.length) return [];
+  if (!tasks.value.length) return [];
   
-  const dates = projects.value.flatMap(p => [new Date(p.startDate), new Date(p.endDate)]);
+  const dates = tasks.value.map(t => new Date(t.deadline));
   const minDate = new Date(Math.min(...dates.map(d => d.getTime())));
   const maxDate = new Date(Math.max(...dates.map(d => d.getTime())));
   
@@ -83,16 +76,18 @@ const months = computed(() => {
   return months;
 });
 
-// Get projects for a specific team
-const teamProjects = (teamId: number) => {
-  return projects.value.filter(p => p.teamId === teamId);
+// Get tasks for a specific team
+const teamTasks = (teamId: number) => {
+  return tasks.value.filter(t => t.teamId === teamId);
 };
 
-// Calculate project bar style (position and width)
-const getProjectStyle = (project: Project) => {
-  const startDate = new Date(project.startDate);
-  const endDate = new Date(project.endDate);
+// Calculate task bar style (position and width)
+const getTaskStyle = (task: TaskRequest) => {
+  const startDate = new Date(); // Используем текущую дату как начало задачи
+  const endDate = new Date(task.deadline);
   const monthsList = months.value;
+  
+  if (!monthsList.length) return {};
   
   // Calculate start position
   const startMonth = startDate.getMonth() + startDate.getFullYear() * 12;
@@ -104,52 +99,49 @@ const getProjectStyle = (project: Project) => {
   const endMonth = endDate.getMonth() + endDate.getFullYear() * 12;
   const width = endMonth - startMonth + 1;
   
+  const colors = {
+    new: '#4ECDC4',
+    in_progress: '#45B7D1',
+    completed: '#96CEB4'
+  };
+  
   return {
-    backgroundColor: getRandomColor(),
+    backgroundColor: colors[task.status] || '#FF6B6B',
     gridColumn: `${startPosition + 1} / span ${width}`
   };
+};
+
+const formatDate = (date: string) => {
+  return new Intl.DateTimeFormat('ru', {
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric'
+  }).format(new Date(date));
 };
 
 // Fetch data from backend
 const fetchData = async () => {
   try {
-    // Mock data for testing
-    teams.value = [
-      { id: 1, name: 'Команда разработки' },
-      { id: 2, name: 'Команда дизайна' },
-      { id: 3, name: 'Команда тестирования' }
-    ];
-    
-    projects.value = [
-      {
-        id: 1,
-        name: 'Проект А',
-        teamId: 1,
-        startDate: '2024-03-01',
-        endDate: '2024-05-30'
+    const token = document.cookie.split('; ').find(row => row.startsWith('token='))?.split('=')[1];
+    if (!token) {
+      console.error('No token found');
+      return;
+    }
+
+    // Fetch teams
+    await teamStore.fetchTeams();
+
+    // Fetch tasks
+    const response = await axios.get('/api/tasks', {
+      params: {
+        limit: 100, // Получаем больше задач для полноты данных
+        sort: 'deadline'
       },
-      {
-        id: 2,
-        name: 'Проект Б',
-        teamId: 2,
-        startDate: '2024-04-15',
-        endDate: '2024-07-15'
-      },
-      {
-        id: 3,
-        name: 'Проект В',
-        teamId: 3,
-        startDate: '2024-05-01',
-        endDate: '2024-08-30'
-      },
-      {
-        id: 4,
-        name: 'Проект Г',
-        teamId: 1,
-        startDate: '2024-06-01',
-        endDate: '2024-09-30'
+      headers: {
+        Authorization: `Bearer ${token}`
       }
-    ];
+    });
+    tasks.value = response.data;
   } catch (error) {
     console.error('Error fetching data:', error);
   }
@@ -181,10 +173,13 @@ h2 {
   display: flex;
   border-bottom: 1px solid #e0e0e0;
   background-color: #f8f9fa;
+  position: sticky;
+  top: 0;
+  z-index: 2;
 }
 
 .team-header {
-  width: 200px;
+  width: 250px;
   padding: 12px;
   font-weight: bold;
   border-right: 1px solid #e0e0e0;
@@ -210,13 +205,39 @@ h2 {
 .gantt-row {
   display: flex;
   border-bottom: 1px solid #e0e0e0;
+  min-height: 60px;
 }
 
 .team-name {
-  width: 200px;
+  width: 250px;
   padding: 12px;
   border-right: 1px solid #e0e0e0;
   background-color: #f8f9fa;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.team-status {
+  font-size: 12px;
+  padding: 4px 8px;
+  border-radius: 4px;
+  display: inline-block;
+}
+
+.team-status.available {
+  background-color: #4CAF50;
+  color: white;
+}
+
+.team-status.in_project {
+  background-color: #2196F3;
+  color: white;
+}
+
+.team-status.on_break {
+  background-color: #FF9800;
+  color: white;
 }
 
 .timeline {
@@ -225,6 +246,7 @@ h2 {
   grid-auto-columns: minmax(150px, 1fr);
   position: relative;
   flex: 1;
+  padding: 4px 0;
 }
 
 .project-bar {
@@ -238,6 +260,7 @@ h2 {
   overflow: hidden;
   text-overflow: ellipsis;
   z-index: 1;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
 }
 
 .no-data {
